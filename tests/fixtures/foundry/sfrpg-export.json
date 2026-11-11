@@ -1,0 +1,64 @@
+{
+  "schema": "tablerecords.foundry-export/v1",
+  "exportedAtMs": 1792817800000,
+  "exportedBy": { "id": "GMUSER0000000000000", "name": "GM" },
+  "foundryVersion": "14.369.0",
+  "world": { "id": "demo-world", "title": "Demo World" },
+  "system": { "id": "sfrpg", "version": "14.0.2" },
+  "messages": [
+    {
+      "messageId": "msg_sfrpg_001",
+      "timestampMs": 1792817725070,
+      "author": { "id": "USERBEN0000000000002", "name": "Ben" },
+      "speaker": { "alias": "Demo Character", "actor": "actorDemo", "token": "tokenDemo" },
+      "speakerName": "Demo Character",
+      "actorId": "actorDemo",
+      "actorName": "Demo Character",
+      "tokenName": "Demo Character",
+      "style": 0,
+      "flavor": "Skill Check - Diplomacy",
+      "content": "<p>Skill Check - Diplomacy</p>",
+      "whisper": [],
+      "blind": false,
+      "rolls": [
+        {
+          "class": "_SFRPGRoll",
+          "formula": "1d20 + 19 + 2",
+          "total": 33,
+          "options": { "rollOptions": {}, "sfrpgRollSuccess": true },
+          "dice": [],
+          "terms": [
+            { "class": "Die", "faces": 20, "number": 1, "results": [{ "result": 12, "active": true }], "evaluated": true },
+            { "class": "OperatorTerm", "operator": "+" },
+            { "class": "NumericTerm", "number": 21 }
+          ],
+          "evaluated": true
+        }
+      ]
+    },
+    {
+      "messageId": "msg_sfrpg_002",
+      "timestampMs": 1792817730000,
+      "author": { "id": "USERBEN0000000000002", "name": "Ben" },
+      "speaker": { "alias": "Demo Character", "actor": "actorDemo" },
+      "speakerName": "Demo Character",
+      "style": 0,
+      "flavor": "Laser pistol damage",
+      "content": "<p>Laser pistol damage</p>",
+      "whisper": [],
+      "blind": false,
+      "rolls": [
+        {
+          "class": "Roll",
+          "formula": "1d6 + 3",
+          "total": 8,
+          "terms": [],
+          "dice": [],
+          "evaluated": true
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}
+

@@ -1,0 +1,240 @@
+/* TableRecords Bridge — small, non-invasive styles for the mental-note dialog. */
+.table-records-bridge textarea,
+.dialog .table-records-bridge textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.table-records-bridge .notes,
+.dialog .notes {
+  color: #7a7a7a;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+/* First-run setup wizard. */
+.table-records-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.table-records-setup h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.table-records-setup p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.table-records-setup .tr-setup-progress {
+  display: flex;
+  gap: 4px;
+}
+
+.table-records-setup .tr-setup-progress span {
+  flex: 1;
+  border-bottom: 2px solid var(--color-border, #7a7a7a);
+  padding: 0 0 4px;
+  color: var(--color-text-subtle, #7a7a7a);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.table-records-setup .tr-setup-progress span.active {
+  border-color: var(--color-warm-1, #ff9b3f);
+  color: var(--color-text-primary, inherit);
+  font-weight: 600;
+}
+
+.table-records-setup .tr-setup-progress span.done {
+  border-color: var(--color-cool-3, #4d8dcc);
+}
+
+.table-records-setup .tr-setup-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.table-records-setup .tr-setup-checks {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--color-border, #7a7a7a);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.table-records-setup .tr-setup-checks .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.table-records-setup .tr-setup-advanced {
+  border-top: 1px solid var(--color-border, #7a7a7a);
+  padding-top: 8px;
+}
+
+.table-records-setup .tr-setup-advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.table-records-setup .tr-setup-result {
+  border-left: 3px solid var(--color-border, #7a7a7a);
+  border-radius: 4px;
+  background: var(--color-cool-5, rgba(255, 255, 255, 0.05));
+  padding: 10px 12px;
+}
+
+.table-records-setup .tr-setup-result.ok {
+  border-color: #3ba55d;
+}
+
+.table-records-setup .tr-setup-result.bad {
+  border-color: #c9593f;
+}
+
+.table-records-setup .tr-setup-result p {
+  margin: 0;
+}
+
+/* GM player-post tools. */
+.tr-gm-tools-launch {
+  width: 100%;
+  margin: 0 0 6px;
+}
+
+.tr-gm-tools-floating {
+  position: fixed;
+  right: 16px;
+  bottom: 84px;
+  z-index: 70;
+  width: auto;
+}
+
+.tr-gm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 18px;
+}
+
+.tr-gm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  border: 1px solid var(--color-border, #7a7a7a);
+  border-radius: 8px;
+  background: var(--color-bg, #1b1b1b);
+  color: var(--color-text-primary, inherit);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  padding: 18px;
+}
+
+.tr-gm-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tr-gm-head h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+
+.tr-gm-muted,
+.tr-gm-status,
+.tr-gm-warning {
+  margin: 0;
+  color: var(--color-text-subtle, #a0a0a0);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.tr-gm-close {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tr-gm-field {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.tr-gm-actions,
+.tr-gm-publish-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tr-gm-preview {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid var(--color-border, #7a7a7a);
+  padding-top: 10px;
+}
+
+.tr-gm-preview[hidden] {
+  display: none;
+}
+
+.tr-gm-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.tr-gm-preview-meta {
+  color: var(--color-text-subtle, #a0a0a0);
+}
+
+.tr-gm-text {
+  width: 100%;
+  min-height: 260px;
+  box-sizing: border-box;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+  padding: 8px;
+}
+
+.tr-gm-warning {
+  color: var(--color-warm-1, #ff9b3f);
+}
+
+.tr-gm-error {
+  color: #c9593f;
+}
+
+.tr-player-post {
+  line-height: 1.45;
+}
+
+.tr-player-post .tr-player-post-label {
+  margin: 0 0 4px;
+  opacity: 0.75;
+  font-size: 12px;
+}

@@ -1,0 +1,54 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+playwright-report/
+test-results/
+/screenshots/
+**/.edge-profile/
+progress-events.txt
+screenshots/qa/.edge-profile/
+
+# Internal agent notes, plans, reviews, and QA evidence
+/AGENTS.md
+/PLAN.md
+/docs/STATUS.md
+/docs/FEATURE-REVIEW.md
+/docs/UX-REVIEW.md
+/docs/AI-SPEAK-REVIEW.md
+/docs/PHASE-2.md
+/docs/PLAN-*.md
+/docs/qa/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+python/.venv/
+
+# Models and generated audio
+models/
+*.wav
+*.flac
+*.ogg
+*.mp3
+
+# Runtime sessions, logs, exports
+sessions/
+data/
+logs/
+*.log
+foundry-imports/
+tablerecords-foundry-*.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

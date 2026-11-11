@@ -1,0 +1,52 @@
+name: Release
+
+# A dashboard release only exists when the tag is vX.Y.Z and the CI job passes.
+# CI runs only the non-LLM suite; model calls stay local.
+# The Foundry bridge is released separately: see release-module.yml.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Publish the release
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check the tag against package.json
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v', ''
+          $package = Get-Content package.json -Raw | ConvertFrom-Json
+          if ($package.version -ne $version) {
+            throw "package.json is $($package.version) but the tag is $version. Bump the version and commit it before tagging."
+          }
+
+      - run: npm run build:web
+
+      - name: Package the dashboard bundle
+        shell: pwsh
+        run: Compress-Archive -Path dist/web/* -DestinationPath "tablerecords-web-${{ github.ref_name }}.zip"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: tablerecords-web-*.zip

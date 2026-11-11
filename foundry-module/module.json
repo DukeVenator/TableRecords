@@ -1,0 +1,23 @@
+{
+  "id": "table-records-bridge",
+  "title": "TableRecords Bridge",
+  "description": "Live bridge from Foundry VTT to a local TableRecords dashboard. Adds GM tools for reviewed, player-facing recaps, names, and clues; a first-run setup wizard; live chat, rolls, state, and mental notes; Break Time mirroring; and a recording-consent notice.",
+  "version": "0.4.0",
+  "authors": [{ "name": "TableRecords" }],
+  "compatibility": {
+    "minimum": "12",
+    "verified": "14",
+    "maximum": ""
+  },
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/bridge.css"],
+  "socket": false,
+  "url": "http://127.0.0.1:17300",
+  "readme": "README.md",
+  "flags": {
+    "table-records-bridge": {
+      "localOnly": true
+    }
+  }
+}
+

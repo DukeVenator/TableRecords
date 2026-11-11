@@ -1,0 +1,57 @@
+name: Bridge release
+
+# The Foundry bridge ships on its own tag, module-vX.Y.Z, so its version can move
+# without a dashboard release. The tag must match foundry-module/module.json.
+# Install in Foundry with the manifest URL:
+#   https://github.com/<owner>/<repo>/releases/latest/download/module.json
+
+on:
+  push:
+    tags: ["module-v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
+  package:
+    name: Package and release the bridge
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag against module.json
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^module-v', ''
+          $module = Get-Content foundry-module/module.json -Raw | ConvertFrom-Json
+          if ($module.version -ne $version) {
+            throw "foundry-module/module.json is $($module.version) but the tag is $version. Bump the version and commit it before tagging."
+          }
+
+      - name: Build the release manifest
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^module-v', ''
+          $repo = "${{ github.repository }}"
+          $module = Get-Content foundry-module/module.json -Raw | ConvertFrom-Json
+          $module | Add-Member -NotePropertyName manifest -NotePropertyValue "https://github.com/$repo/releases/download/$tag/module.json" -Force
+          $module | Add-Member -NotePropertyName download -NotePropertyValue "https://github.com/$repo/releases/download/$tag/table-records-bridge-$version.zip" -Force
+          $module | Add-Member -NotePropertyName url -NotePropertyValue "https://github.com/$repo" -Force
+          $module | ConvertTo-Json -Depth 10 | Set-Content foundry-module/module.json -Encoding utf8
+          Copy-Item foundry-module/module.json module.json
+          Compress-Archive -Path foundry-module/* -DestinationPath "table-records-bridge-$version.zip"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: TableRecords Bridge ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            table-records-bridge-*.zip
+            module.json

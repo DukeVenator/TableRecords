@@ -1,0 +1,116 @@
+{
+  "schema": "tablerecords.foundry-export/v1",
+  "exportedAtMs": 1793444900000,
+  "exportedBy": { "id": "GMUSER0000000000000", "name": "GM" },
+  "foundryVersion": "14.369.0",
+  "world": { "id": "swffg-cartel", "title": "Demo World" },
+  "system": { "id": "starwarsffg", "version": "2.0" },
+  "messages": [
+    {
+      "messageId": "msg_ffg_001",
+      "timestampMs": 1793430369144,
+      "author": { "id": "USERALICE00000000001", "name": "Alice" },
+      "speaker": { "scene": "scene1", "token": "token1", "actor": "actorVeyra", "alias": "Veyra Sol" },
+      "speakerName": "Veyra Sol",
+      "actorId": "actorVeyra",
+      "actorName": "Veyra Sol",
+      "tokenName": "Veyra Sol",
+      "style": 0,
+      "flavor": "Laser rifle attack",
+      "content": "<div class=\"ffg-roll\"><b>Laser rifle attack</b></div>",
+      "whisper": [],
+      "blind": false,
+      "rolls": [
+        {
+          "class": "RollFFG",
+          "formula": "2eP+1eA+1eB",
+          "total": 0,
+          "options": { "rollOptions": {} },
+          "dice": [],
+          "terms": [{ "class": "Die", "faces": 12, "number": 2, "results": [{ "result": 1, "active": true }] }],
+          "evaluated": true,
+          "ffg": {
+            "success": 2,
+            "failure": 0,
+            "advantage": 1,
+            "threat": 0,
+            "triumph": 1,
+            "despair": 0,
+            "light": 0,
+            "dark": 0
+          },
+          "hasFFG": true,
+          "hasStandard": false,
+          "data": { "name": "Laser rifle", "uuid": "Actor.actorVeyra.Item.abc123" },
+          "addedResults": [],
+          "flavorText": "Laser rifle attack"
+        }
+      ],
+      "rollsRaw": ["{\"class\":\"RollFFG\",\"formula\":\"2eP+1eA+1eB\"}"]
+    },
+    {
+      "messageId": "msg_ffg_002",
+      "timestampMs": 1793430420000,
+      "author": { "id": "USERBEN0000000000002", "name": "Ben" },
+      "speaker": { "scene": "scene1", "token": "token2", "actor": "actorKorrin", "alias": "Korrin" },
+      "speakerName": "Korrin",
+      "actorId": "actorKorrin",
+      "actorName": "Korrin",
+      "tokenName": "Korrin",
+      "style": 0,
+      "flavor": "Coordination",
+      "content": "<p>Coordination check</p>",
+      "whisper": [],
+      "blind": false,
+      "rolls": [
+        {
+          "class": "RollFFG",
+          "formula": "1eA+1eD+1eS",
+          "total": 0,
+          "ffg": {
+            "success": 0,
+            "failure": 1,
+            "advantage": 0,
+            "threat": 2,
+            "triumph": 0,
+            "despair": 1,
+            "light": 0,
+            "dark": 0
+          },
+          "hasFFG": true,
+          "hasStandard": false,
+          "data": { "name": "Coordination" },
+          "addedResults": [],
+          "flavorText": "Coordination"
+        }
+      ]
+    },
+    {
+      "messageId": "msg_ffg_003",
+      "timestampMs": 1793430460000,
+      "author": { "id": "USERALICE00000000001", "name": "Alice" },
+      "speaker": { "alias": "Veyra Sol" },
+      "speakerName": "Veyra Sol",
+      "style": 2,
+      "flavor": null,
+      "content": "<p>I think we should leave before the Imperials arrive.</p>",
+      "whisper": ["GMUSER0000000000000"],
+      "blind": false,
+      "rolls": []
+    },
+    {
+      "messageId": "msg_ffg_004",
+      "timestampMs": 1793430500000,
+      "author": { "id": "GMUSER0000000000000", "name": "GM" },
+      "speaker": { "alias": "GM" },
+      "speakerName": "GM",
+      "style": 1,
+      "flavor": null,
+      "content": "<p>Outside the session window (test).</p>",
+      "whisper": [],
+      "blind": false,
+      "rolls": []
+    }
+  ],
+  "warnings": []
+}

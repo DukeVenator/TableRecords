@@ -1,0 +1,68 @@
+{
+  "name": "tablerecords",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Discord + Foundry session capture and notes pipeline",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "dashboard": "tsx src/server/index.ts",
+    "build": "npm run typecheck && npm run build:web",
+    "build:web": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint --deny-warnings src tests scripts",
+    "lint:fix": "oxlint --fix src tests scripts",
+    "test": "vitest run",
+    "test:ci": "vitest run --exclude tests/llm.test.ts --exclude tests/llm-api.test.ts --exclude tests/llm-summary.test.ts --exclude tests/llamacpp.test.ts",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:live": "playwright test --grep @live",
+    "setup:python": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-python.ps1",
+    "demo": "tsx scripts/demo-seed.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "docs:check": "node scripts/check-docs.mjs"
+  },
+  "dependencies": {
+    "@discordjs/opus": "0.10.0",
+    "@discordjs/voice": "0.19.2",
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/multipart": "^10.1.6",
+    "@fastify/static": "^10.1.8",
+    "@snazzah/davey": "0.1.12",
+    "discord.js": "14.28.0",
+    "dotenv": "^17.2.3",
+    "fastify": "^5.12.7",
+    "opusscript": "0.0.8",
+    "prism-media": "1.3.5",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "avoid-ai-writing-detector": "^3.38.0",
+    "oxlint": "^1.93.0",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "allowScripts": {
+    "@discordjs/opus@0.10.0": true,
+    "esbuild@0.28.2": true
+  },
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "AGPL-3.0-only"
+}
