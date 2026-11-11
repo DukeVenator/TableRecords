@@ -25,7 +25,7 @@ function markdownFiles(directory) {
   return found;
 }
 
-const files = ["README.md", "FEATURES.md", "ROADMAP.md", "PLAN.md", "foundry-module/README.md"];
+const files = ["README.md", "FEATURES.md", "ROADMAP.md", "foundry-module/README.md"];
 for (const file of markdownFiles(join(root, "docs"))) {
   files.push(relative(root, file).split(sep).join("/"));
 }
