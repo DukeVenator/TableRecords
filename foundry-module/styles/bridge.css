@@ -108,8 +108,15 @@
 
 /* GM player-post tools. */
 .tr-gm-tools-launch {
-  width: 100%;
-  margin: 0 0 6px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0 4px 0 0;
+  padding: 0;
+  line-height: 1;
 }
 
 .tr-gm-tools-floating {
@@ -117,7 +124,25 @@
   right: 16px;
   bottom: 84px;
   z-index: 70;
-  width: auto;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+
+.tr-gm-tools-launch i,
+.tr-gm-close i,
+.tr-gm-actions i,
+.tr-gm-publish-row i {
+  pointer-events: none;
+}
+
+.tr-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .tr-gm-overlay {
@@ -166,12 +191,17 @@
 }
 
 .tr-gm-close {
+  display: inline-flex;
   align-self: flex-start;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border: 0;
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 16px;
   line-height: 1;
 }
 
@@ -181,10 +211,56 @@
   font-size: 12px;
 }
 
+.tr-gm-transport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--color-border, #7a7a7a);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.tr-gm-transport-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.tr-gm-transport button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.tr-gm-capture-state {
+  color: var(--color-text-subtle, #a0a0a0);
+  font-size: 12px;
+}
+
 .tr-gm-actions,
 .tr-gm-publish-row {
   display: flex;
   flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tr-gm-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.tr-gm-publish-row button {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
 }
 

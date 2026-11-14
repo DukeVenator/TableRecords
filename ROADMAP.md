@@ -38,7 +38,37 @@ Acceptance:
 - Login, logout, invite, revoke, and permission checks have tests.
 - No API route trusts a role from the request body.
 
-### 2. Cloudflare support
+### 2. Bridge control hardening
+
+The bridge now has start, pause, resume, and stop controls. They work on loopback today, but they trust the bridge token. That token is a Foundry world setting, so other clients can read it. The Foundry UI only shows the buttons to a GM, but the server cannot verify the Foundry role.
+
+A client that can reach the dashboard with that token could pause or stop a recording. Do not expose these controls through Cloudflare, or use them on a shared machine, until this work is done.
+
+The current trust model is one GM, one trusted machine, and a loopback dashboard.
+
+Planned:
+
+- Generate a separate control secret.
+- Store the control secret as a Foundry client setting on the GM client, not as a world setting.
+- Keep the world bridge token for live chat, rolls, and state only.
+- Require the control secret for start, pause, resume, and stop.
+- Restrict the control route to the exact Foundry origin instead of wildcard CORS.
+- Add a cooldown and a per-minute rate limit.
+- Allow one control action at a time.
+- Ask for confirmation before pause or stop. Pause discards the in-progress partial clip.
+- Write an audit marker or timeline event with the action, time, and Foundry user.
+- Add tests for missing token, wrong token, replayed requests, rate limits, and concurrent actions.
+
+Acceptance:
+
+- The world-readable bridge token cannot start, pause, resume, or stop a recording.
+- The control secret is not shown in world settings, logs, or screenshots.
+- A request from another origin is rejected.
+- Repeated control requests return 429 after the limit.
+- Control actions appear in the session timeline.
+- Pause and stop require a deliberate confirmation.
+
+### 3. Cloudflare support
 
 The goal is remote access without opening a port on the house network.
 
@@ -65,7 +95,7 @@ Acceptance:
 - A signed-out user cannot reach an API route.
 - Share links work through the tunnel without exposing the admin UI.
 
-### 3. Multiple sessions and tables
+### 4. Multiple sessions and tables
 
 The recorder is built around one active session. A table with two games, a pickup session, or a co-GM needs more.
 
@@ -84,7 +114,7 @@ Acceptance:
 - Deleting a table does not delete another table's data.
 - Existing single-table installs migrate without changing session IDs.
 
-### 4. Resource queue
+### 5. Resource queue
 
 The current job runner is FIFO per app. Multiple sessions and local models need a queue that knows what hardware a job uses.
 
@@ -113,7 +143,7 @@ Acceptance:
 - Queue state survives a restart.
 - The UI shows which resource a job is waiting for.
 
-### 5. Multi-GM and visibility
+### 6. Multi-GM and visibility
 
 A table often has a GM and one or more co-GMs, plus players who should see only part of the record.
 
@@ -146,7 +176,7 @@ Acceptance:
 - Every read route checks table membership and artifact visibility.
 - Permission changes are written to an audit log.
 
-### 6. Share links
+### 7. Share links
 
 Share links should let a player read a recap without an account, while keeping the rest private.
 

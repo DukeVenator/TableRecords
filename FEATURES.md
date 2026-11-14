@@ -79,6 +79,6 @@ This part is off by default and never writes into the canonical outputs.
 
 ## Status
 
-The local suite has 141 tests across 44 files. Playwright adds 11 browser checks and one opt-in live Ollama check. GitHub Actions runs a 121-test non-LLM selection, typecheck, web build, and docs check.
+The local suite has 143 tests across 44 files. Playwright adds 11 browser checks and one opt-in live Ollama check. GitHub Actions runs a 121-test non-LLM selection, typecheck, web build, and docs check.
 
 Planned work is in [ROADMAP.md](ROADMAP.md).

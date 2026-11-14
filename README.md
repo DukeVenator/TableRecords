@@ -195,7 +195,7 @@ npm run build:web
 npm run test:e2e        # dashboard must be running on 127.0.0.1:17300
 ```
 
-The current suite has **141 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
+The current suite has **143 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
 
 GitHub Actions does not run model calls. CI runs `npm run test:ci` (121 tests), lint, typecheck, the web build, and the docs check. A `vX.Y.Z` tag starts a release only if CI passes, and the tag must match `package.json`. Bridge tags use `module-vX.Y.Z` and must match `foundry-module/module.json`.
 
@@ -206,6 +206,7 @@ See [docs/RELEASING.md](docs/RELEASING.md).
 TableRecords is one GM, one machine, one active session today. The next work is about letting a table share it without giving up the local-first parts:
 
 - Add accounts and roles so a table can have more than one GM.
+- Harden the bridge recording controls with a separate, client-scoped control secret.
 - Offer an optional Cloudflare Tunnel and Access front door for remote play.
 - Support more than one session and more than one table.
 - Add a resource-aware queue for GPU, CPU, and network work.

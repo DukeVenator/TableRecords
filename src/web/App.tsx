@@ -555,6 +555,20 @@ export default function App() {
       showToast("ok", "Recording saved");
     });
 
+  const pauseSession = (sessionId: string) =>
+    runTask("pause", async () => {
+      const next = await post<Status>(`/api/sessions/${sessionId}/pause`);
+      setStatus(next);
+      showToast("ok", "Recording paused");
+    });
+
+  const resumeSession = (sessionId: string) =>
+    runTask("resume", async () => {
+      const next = await post<Status>(`/api/sessions/${sessionId}/resume`);
+      setStatus(next);
+      showToast("ok", "Recording resumed");
+    });
+
   const addMarker = (sessionId: string, kind: string, mentalNote = false) =>
     runTask("marker", async () => {
       await post(`/api/sessions/${sessionId}/markers`, { kind, mentalNote, label: markerLabel || undefined });
@@ -1009,6 +1023,8 @@ export default function App() {
             onJoin={join}
             onLeave={leave}
             onStart={startSession}
+            onPause={pauseSession}
+            onResume={resumeSession}
             onStop={stopSession}
             onMarker={(sessionId, kind, mentalNote) => void addMarker(sessionId, kind, mentalNote)}
             onDeleteMarker={(sessionId, markerId) => void deleteMarker(sessionId, markerId)}

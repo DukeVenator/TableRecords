@@ -179,6 +179,39 @@ describe("HTTP API", () => {
     expect((leave.json() as { bot: { state: string } }).bot.state).toBe("not_configured");
   });
 
+  it("authenticates bridge recording controls and reports their state", async () => {
+    const app = await makeApp();
+    const settings = await app.fastify.inject({ method: "GET", url: "/api/settings" });
+    const token = (settings.json() as { foundryBridge: { token: string } }).foundryBridge.token;
+    expect(token).toBeTruthy();
+
+    const unauthorized = await app.fastify.inject({
+      method: "POST",
+      url: "/api/foundry/control",
+      headers: { "content-type": "application/json" },
+      payload: { action: "status" }
+    });
+    expect(unauthorized.statusCode).toBe(401);
+
+    const status = await app.fastify.inject({
+      method: "POST",
+      url: "/api/foundry/control",
+      headers: { "content-type": "application/json", "x-tablerecords-token": token },
+      payload: { action: "status" }
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json()).toMatchObject({ ok: true, state: "idle" });
+
+    const pause = await app.fastify.inject({
+      method: "POST",
+      url: "/api/foundry/control",
+      headers: { "content-type": "application/json", "x-tablerecords-token": token },
+      payload: { action: "pause" }
+    });
+    expect(pause.statusCode).toBe(409);
+    expect(pause.json()).toMatchObject({ error: { code: "no_session" } });
+  });
+
   it("persists non-secret settings across an app restart", async () => {
     const root = await fsp.mkdtemp(path.join(os.tmpdir(), "tablerecords-settings-"));
     const first = await makeApp(root);

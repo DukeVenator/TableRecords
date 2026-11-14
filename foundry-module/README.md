@@ -71,13 +71,15 @@ detects a junction and leaves it in place, so edits show up after a Foundry refr
 
 ## GM player posts
 
-The GM client gets a **TableRecords GM tools** button above the chat controls. Choose a window and one of:
+The GM client gets a compact book icon above the chat controls. Hover it for **TableRecords GM tools**. If the dashboard URL or bridge token is missing, clicking it opens the setup wizard instead. Once configured, compact play, pause, and stop buttons control the current TableRecords session. The pause button changes to resume while capture is paused, and starting from Foundry sends the player consent prompt.
+
+The panel also has draft controls. Choose a window and one of:
 
 - **Recap**: a short account of what the players just experienced.
 - **Important names**: people, places, and groups named in the public record.
 - **Clues mentioned**: clues and open questions, with uncertain claims marked.
 
-The dashboard generates a draft from the current session for the connected world. A private preview opens in Foundry with the text in an editable box. **Post to players** creates a public chat message with the edited text and an AI-assisted label; **Discard** leaves chat untouched. **Regenerate** replaces the draft after a warning if you have edited it.
+The dashboard generates a draft from the current session for the connected world. The draft buttons use icons with hover labels: a scroll for **Recap**, people for **Important names**, and a magnifying glass for **Clues mentioned**. A private preview opens in Foundry with the text in an editable box. **Post to players** creates a public chat message with the edited text and an AI-assisted label; **Discard** leaves chat untouched. **Regenerate** replaces the draft after a warning if you have edited it.
 
 The draft uses only public speech, public chat, and public rolls from the selected window. Whispers, blind rolls, mental notes, and earlier generated posts are excluded. Spoken audio can still contain spoilers, so review every draft before posting. The dashboard and a local model must be running; nothing is posted by the server.
 

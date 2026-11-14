@@ -1,5 +1,5 @@
 /*
- * TableRecords Bridge — Foundry VTT module (v0.4.0)
+ * TableRecords Bridge — Foundry VTT module (v0.4.1)
  *
  * The GM client posts live chat/roll messages, scene and combat state, and
  * optional mental notes to a local TableRecords dashboard. When the Break Time
@@ -12,7 +12,7 @@
  */
 (() => {
   const MODULE_ID = "table-records-bridge";
-  const VERSION = "0.4.0";
+  const VERSION = "0.4.1";
   const CONSENT_VERSION = "2026-11-01";
   const CONSENT_NOTICE = [
     "TableRecords records each Discord speaker separately for local tabletop note-taking.",
@@ -245,6 +245,10 @@
 
   function bridgeBase() {
     return String(setting("dashboardUrl") || "").trim().replace(/\/+$/, "");
+  }
+
+  function bridgeConfigured() {
+    return Boolean(bridgeBase() && String(setting("bridgeToken") || "").trim());
   }
 
   async function post(payloadValue, timeoutMs = 12_000) {
@@ -1240,6 +1244,55 @@
   let gmToolsOverlay = null;
   let activeDraft = null;
 
+  async function requestRecordingControl(action) {
+    const base = bridgeBase();
+    const token = String(setting("bridgeToken") || "").trim();
+    if (!base || !token) {
+      return { ok: false, reason: "not_configured", message: "Set the dashboard address and bridge token first." };
+    }
+    try {
+      const response = await fetch(`${base}/api/foundry/control`, {
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        headers: {
+          "content-type": "application/json",
+          "x-tablerecords-token": token
+        },
+        body: JSON.stringify({
+          action,
+          sessionId: String(setting("sessionId") || "").trim() || undefined,
+          promptPlayers: true
+        })
+      });
+      const text = await response.text();
+      let body = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = null;
+      }
+      if (!response.ok) {
+        return {
+          ok: false,
+          state: body?.capture?.state ?? null,
+          message: body?.error?.message ?? body?.message ?? "The recording command failed."
+        };
+      }
+      return {
+        ok: true,
+        state: body?.state ?? body?.capture?.state ?? null,
+        sessionId: body?.sessionId ?? body?.session?.currentId ?? null
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : "The dashboard did not answer."
+      };
+    }
+  }
+
   async function requestPlayerDraft(kind, windowSeconds) {
     const base = bridgeBase();
     const token = String(setting("bridgeToken") || "").trim();
@@ -1359,7 +1412,9 @@
             <h2 id="tr-gm-title">TableRecords GM tools</h2>
             <p class="tr-gm-muted">Draft player-facing text from the last few minutes. Nothing is posted until you review it.</p>
           </div>
-          <button type="button" class="tr-gm-close" aria-label="Close TableRecords GM tools">×</button>
+          <button type="button" class="tr-gm-close" aria-label="Close TableRecords GM tools" title="Close">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
         </div>
         <label class="tr-gm-field">Window
           <select class="tr-gm-window">
@@ -1368,10 +1423,36 @@
             <option value="900">Last 15 minutes</option>
           </select>
         </label>
-        <div class="tr-gm-actions">
-          <button type="button" data-tr-kind="recap">Recap</button>
-          <button type="button" data-tr-kind="names">Important names</button>
-          <button type="button" data-tr-kind="clues">Clues mentioned</button>
+        <div class="tr-gm-transport" role="group" aria-label="Recording controls">
+          <span class="tr-gm-capture-state" role="status">Checking recording…</span>
+          <div class="tr-gm-transport-buttons">
+            <button type="button" data-tr-control="start" aria-label="Start recording" title="Start recording" data-tooltip="Start recording">
+              <i class="fa-solid fa-play" aria-hidden="true"></i>
+              <span class="tr-visually-hidden">Start recording</span>
+            </button>
+            <button type="button" data-tr-control="pause" aria-label="Pause recording" title="Pause recording" data-tooltip="Pause recording">
+              <i class="fa-solid fa-pause" aria-hidden="true"></i>
+              <span class="tr-visually-hidden">Pause recording</span>
+            </button>
+            <button type="button" data-tr-control="stop" aria-label="Stop recording" title="Stop recording" data-tooltip="Stop recording">
+              <i class="fa-solid fa-stop" aria-hidden="true"></i>
+              <span class="tr-visually-hidden">Stop recording</span>
+            </button>
+          </div>
+        </div>
+        <div class="tr-gm-actions" role="group" aria-label="Draft type">
+          <button type="button" data-tr-kind="recap" aria-label="Recap" title="Recap" data-tooltip="Recap">
+            <i class="fa-solid fa-scroll" aria-hidden="true"></i>
+            <span class="tr-visually-hidden">Recap</span>
+          </button>
+          <button type="button" data-tr-kind="names" aria-label="Important names" title="Important names" data-tooltip="Important names">
+            <i class="fa-solid fa-users" aria-hidden="true"></i>
+            <span class="tr-visually-hidden">Important names</span>
+          </button>
+          <button type="button" data-tr-kind="clues" aria-label="Clues mentioned" title="Clues mentioned" data-tooltip="Clues mentioned">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span class="tr-visually-hidden">Clues mentioned</span>
+          </button>
         </div>
         <p class="tr-gm-status" role="status"></p>
         <div class="tr-gm-preview" hidden>
@@ -1382,9 +1463,9 @@
           <p class="tr-gm-warning"></p>
           <textarea class="tr-gm-text" rows="14" aria-label="Player post text"></textarea>
           <div class="tr-gm-publish-row">
-            <button type="button" class="tr-gm-post">Post to players</button>
-            <button type="button" class="tr-gm-regenerate">Regenerate</button>
-            <button type="button" class="tr-gm-discard">Discard</button>
+            <button type="button" class="tr-gm-post"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i> Post to players</button>
+            <button type="button" class="tr-gm-regenerate"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate</button>
+            <button type="button" class="tr-gm-discard"><i class="fa-solid fa-trash-can" aria-hidden="true"></i> Discard</button>
           </div>
         </div>
       </div>`;
@@ -1403,8 +1484,75 @@
     const publishButton = overlay.querySelector(".tr-gm-post");
     const regenerateButton = overlay.querySelector(".tr-gm-regenerate");
     const discardButton = overlay.querySelector(".tr-gm-discard");
+    const transportState = overlay.querySelector(".tr-gm-capture-state");
+    const transportButtons = [...overlay.querySelectorAll("[data-tr-control]")];
     let lastKind = "recap";
     let edited = false;
+    let captureState = "unknown";
+    let transportBusy = false;
+
+    const setTransportState = (next) => {
+      captureState = next || "unknown";
+      const paused = captureState === "paused";
+      const active = captureState === "recording" || paused;
+      const pauseButton = overlay.querySelector('[data-tr-control="pause"]');
+      const startButton = overlay.querySelector('[data-tr-control="start"]');
+      const stopButton = overlay.querySelector('[data-tr-control="stop"]');
+      pauseButton.innerHTML = paused
+        ? '<i class="fa-solid fa-play" aria-hidden="true"></i><span class="tr-visually-hidden">Resume recording</span>'
+        : '<i class="fa-solid fa-pause" aria-hidden="true"></i><span class="tr-visually-hidden">Pause recording</span>';
+      pauseButton.setAttribute("aria-label", paused ? "Resume recording" : "Pause recording");
+      pauseButton.title = paused ? "Resume recording" : "Pause recording";
+      pauseButton.dataset.tooltip = pauseButton.title;
+      startButton.disabled = transportBusy || active || captureState === "stopping";
+      pauseButton.disabled = transportBusy || !(active || captureState === "unknown");
+      stopButton.disabled = transportBusy || !(active || captureState === "unknown");
+      transportState.textContent = transportBusy
+        ? "Sending command…"
+        : captureState === "recording"
+          ? "Recording"
+          : paused
+            ? "Recording paused"
+            : captureState === "stopping"
+              ? "Saving recording"
+              : captureState === "unknown"
+                ? "Recording state unavailable"
+                : "Not recording";
+    };
+
+    const sendTransport = async (action) => {
+      if (transportBusy) return;
+      transportBusy = true;
+      setTransportState(captureState);
+      const result = await requestRecordingControl(action);
+      transportBusy = false;
+      if (result.ok) {
+        setTransportState(result.state || (action === "pause" ? "paused" : action === "stop" ? "idle" : "recording"));
+        status.textContent = action === "start"
+          ? "Recording started."
+          : action === "pause"
+            ? "Recording paused."
+            : action === "resume"
+              ? "Recording resumed."
+              : "Recording stopped and saved.";
+        status.className = "tr-gm-status";
+      } else {
+        setTransportState(result.state || captureState);
+        status.textContent = result.message || "The recording command failed.";
+        status.className = "tr-gm-status tr-gm-error";
+      }
+    };
+
+    for (const button of transportButtons) {
+      button.addEventListener("click", () => {
+        const action = button.dataset.trControl;
+        void sendTransport(action === "pause" && captureState === "paused" ? "resume" : action);
+      });
+    }
+    void requestRecordingControl("status").then((result) => {
+      if (result.ok) setTransportState(result.state || "unknown");
+      else setTransportState("unknown");
+    });
 
     const setBusy = (message) => {
       status.textContent = message;
@@ -1494,8 +1642,17 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "tr-gm-tools-launch";
-    button.textContent = "TableRecords GM tools";
-    button.addEventListener("click", openGmTools);
+    button.setAttribute("aria-label", "TableRecords GM tools");
+    button.title = "TableRecords GM tools";
+    button.dataset.tooltip = "TableRecords GM tools";
+    button.innerHTML = '<i class="fa-solid fa-book-open" aria-hidden="true"></i><span class="tr-visually-hidden">TableRecords GM tools</span>';
+    button.addEventListener("click", () => {
+      if (!bridgeConfigured()) {
+        void openSetupWizard();
+        return;
+      }
+      openGmTools();
+    });
     const controls = document.querySelector("#chat-controls");
     if (controls) {
       controls.prepend(button);

@@ -1068,6 +1068,7 @@ export class TableRecordsApp {
       const liveBridge =
         request.url === "/api/foundry/live" ||
         request.url.startsWith("/api/foundry/commands") ||
+        request.url.startsWith("/api/foundry/control") ||
         request.url.startsWith("/api/foundry/player-drafts");
       const origin = request.headers.origin;
       if (origin && !liveBridge) {
@@ -1101,6 +1102,7 @@ export class TableRecordsApp {
       if (
         request.url === "/api/foundry/live" ||
         request.url.startsWith("/api/foundry/commands") ||
+        request.url.startsWith("/api/foundry/control") ||
         request.url.startsWith("/api/foundry/player-drafts")
       ) {
         reply.header("Access-Control-Allow-Origin", "*");
@@ -1853,6 +1855,14 @@ export class TableRecordsApp {
       return { commands, serverTimeMs: now };
     });
 
+    app.options("/api/foundry/control", async (_request, reply) => {
+      reply.header("Access-Control-Allow-Origin", "*");
+      reply.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+      reply.header("Access-Control-Allow-Headers", "content-type,x-tablerecords-token");
+      reply.header("Access-Control-Max-Age", "600");
+      return reply.code(204).send();
+    });
+
     app.options("/api/foundry/player-drafts", async (_request, reply) => {
       reply.header("Access-Control-Allow-Origin", "*");
       reply.header("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -2602,11 +2612,11 @@ export class TableRecordsApp {
       return this.sessions.detail(request.params.id);
     });
 
-    app.post<{ Params: { id: string }; Body?: { promptPlayers?: boolean } }>("/api/sessions/:id/start", async (request) => {
-      let session = await this.sessions.get(request.params.id);
+    const startRecordingSession = async (sessionId: string, promptPlayers: boolean) => {
+
+      let session = await this.sessions.get(sessionId);
       if (this.recorder.isActive()) apiError("invalid_state", "Capture is already active", 409);
       if (!["draft", "error"].includes(session.status)) apiError("invalid_state", `This session is not ready to start yet.`, 409);
-      const promptPlayers = isRecord(request.body) && request.body.promptPlayers === true;
       const foundryPrompt = this.store.getConsentPrompt(session.world.id);
       const promptFresh = foundryPrompt != null && Date.now() - foundryPrompt.promptedAtMs < 24 * 60 * 60_000;
       if (promptPlayers) {
@@ -2700,10 +2710,38 @@ export class TableRecordsApp {
         this.sse.broadcast("session.updated", { sessionId: failed.sessionId, status: "error" });
         apiError("start_failed", (error as Error).message, 409);
       }
+    };
+
+    app.post<{ Params: { id: string }; Body?: { promptPlayers?: boolean } }>("/api/sessions/:id/start", async (request) => {
+      const promptPlayers = isRecord(request.body) && request.body.promptPlayers === true;
+      return startRecordingSession(request.params.id, promptPlayers);
     });
 
-    app.post<{ Params: { id: string } }>("/api/sessions/:id/stop", async (request) => {
+    app.post<{ Params: { id: string } }>("/api/sessions/:id/pause", async (request) => {
       const session = await this.sessions.get(request.params.id);
+      if (session.status !== "recording" || this.recorder.activeSessionId !== session.sessionId) {
+        apiError("invalid_state", "That session is not recording.", 409);
+      }
+      await this.recorder.pause();
+      this.sse.broadcast("session.updated", { sessionId: session.sessionId, status: "recording", paused: true });
+      await this.emitStatus();
+      return this.buildStatus();
+    });
+
+    app.post<{ Params: { id: string } }>("/api/sessions/:id/resume", async (request) => {
+      const session = await this.sessions.get(request.params.id);
+      if (session.status !== "recording" || this.recorder.activeSessionId !== session.sessionId) {
+        apiError("invalid_state", "That session is not recording.", 409);
+      }
+      await this.recorder.resume();
+      this.sse.broadcast("session.updated", { sessionId: session.sessionId, status: "recording", paused: false });
+      await this.emitStatus();
+      return this.buildStatus();
+    });
+
+    const stopRecordingSession = async (sessionId: string) => {
+
+      const session = await this.sessions.get(sessionId);
       if (!["recording", "joining", "stopping"].includes(session.status)) {
         apiError("invalid_state", `Session is not recording (status ${session.status})`, 409);
       }
@@ -2741,6 +2779,46 @@ export class TableRecordsApp {
         this.discord.leave();
         apiError("stop_failed", (error as Error).message, 500);
       }
+    };
+
+    app.post<{ Params: { id: string } }>("/api/sessions/:id/stop", async (request) => {
+      return stopRecordingSession(request.params.id);
+    });
+
+    app.post<{ Body?: { action?: unknown; sessionId?: unknown; promptPlayers?: unknown } }>("/api/foundry/control", async (request) => {
+      const token = typeof request.headers["x-tablerecords-token"] === "string" ? request.headers["x-tablerecords-token"] : "";
+      if (!token || !this.bridgeToken || !safeEqual(token, this.bridgeToken)) {
+        apiError("unauthorized", "Bridge authentication required", 401);
+      }
+      if (!isRecord(request.body)) apiError("invalid_body", "That request was not a JSON object.");
+      const action = str(request.body.action)?.trim();
+      if (action === "status") {
+        return {
+          ok: true,
+          state: this.recorder.captureState,
+          sessionId: this.recorder.activeSessionId ?? this.currentSessionId
+        };
+      }
+      const requested = str(request.body.sessionId)?.trim() || null;
+      const sessionId = requested || this.recorder.activeSessionId || this.currentSessionId;
+      if (!sessionId) apiError("no_session", "No TableRecords session is selected.", 409);
+      if (action === "start") {
+        return startRecordingSession(sessionId, request.body.promptPlayers !== false);
+      }
+      if (action === "stop") {
+        return stopRecordingSession(sessionId);
+      }
+      if (action === "pause" || action === "resume") {
+        const session = await this.sessions.get(sessionId);
+        if (session.status !== "recording" || this.recorder.activeSessionId !== session.sessionId) {
+          apiError("invalid_state", "That session is not recording.", 409);
+        }
+        if (action === "pause") await this.recorder.pause();
+        else await this.recorder.resume();
+        await this.emitStatus();
+        return this.buildStatus();
+      }
+      apiError("invalid_action", "Use start, pause, resume, or stop.", 400);
     });
 
     app.post<{ Params: { id: string } }>("/api/sessions/:id/markers", async (request, reply) => {

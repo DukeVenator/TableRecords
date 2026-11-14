@@ -16,7 +16,7 @@ import { newUtteranceId } from "../core/ids.js";
 import { trimWavTrailingSilence, WavWriter } from "../core/wav.js";
 import { isSilentUtterance, VoiceActivityMeter } from "../core/vad.js";
 
-export type CaptureState = "idle" | "recording" | "stopping" | "error";
+export type CaptureState = "idle" | "recording" | "paused" | "stopping" | "error";
 export type CaptureHealth = "ok" | "warning" | "error";
 
 export interface CaptureSpeaker {
@@ -131,7 +131,7 @@ export class RecorderService extends EventEmitter {
   }
 
   isActive(): boolean {
-    return this.state === "recording" || this.state === "stopping";
+    return this.state === "recording" || this.state === "paused" || this.state === "stopping";
   }
 
   isOptedOut(userId: string): boolean {
@@ -182,11 +182,60 @@ export class RecorderService extends EventEmitter {
     this.stopReason = null;
     await ensureDir(path.join(options.sessionDir, "discord", "audio"));
 
-    this.speakingHandler = (userId: string) => this.onSpeakingStart(userId);
-    connection.receiver.speaking.on("start", this.speakingHandler);
+    this.attachSpeakingHandler(connection);
     this.connectionStateHandler = () => this.onConnectionState(connection);
     connection.on("stateChange", this.connectionStateHandler);
     this.emit("state");
+  }
+
+  private attachSpeakingHandler(connection: VoiceConnection): void {
+    if (!this.speakingHandler) this.speakingHandler = (userId: string) => this.onSpeakingStart(userId);
+    connection.receiver.speaking.on("start", this.speakingHandler);
+  }
+
+  private detachSpeakingHandler(): void {
+    const connection = this.discord.voiceConnection;
+    if (connection && this.speakingHandler) {
+      connection.receiver.speaking.off("start", this.speakingHandler);
+    }
+    this.speakingHandler = null;
+  }
+
+  async pause(): Promise<CaptureDiagnostics> {
+    if (this.state !== "recording") throw new Error("Capture is not recording");
+    this.state = "paused";
+    this.detachSpeakingHandler();
+    for (const active of this.active.values()) {
+      active.discard = true;
+      active.stopReason = "manual";
+      try {
+        active.stream.destroy();
+        active.decoder.destroy();
+      } catch {
+        // already closed
+      }
+    }
+    const waits = [...this.active.values()].map((active) => active.promise.catch(() => undefined));
+    if (waits.length > 0) {
+      await Promise.race([
+        Promise.allSettled(waits),
+        new Promise((resolve) => setTimeout(resolve, 3000))
+      ]);
+    }
+    this.emit("state");
+    return this.diagnostics();
+  }
+
+  async resume(): Promise<CaptureDiagnostics> {
+    if (this.state !== "paused") throw new Error("Capture is not paused");
+    const connection = this.discord.voiceConnection;
+    if (!connection || connection.state.status !== VoiceConnectionStatus.Ready) {
+      throw new Error("Voice connection is not ready; join a voice channel first");
+    }
+    this.attachSpeakingHandler(connection);
+    this.state = "recording";
+    this.emit("state");
+    return this.diagnostics();
   }
 
   private reset(): void {
@@ -409,7 +458,7 @@ export class RecorderService extends EventEmitter {
   }
 
   private onConnectionState(connection: VoiceConnection): void {
-    if (this.state !== "recording" && this.state !== "stopping") return;
+    if (this.state !== "recording" && this.state !== "paused" && this.state !== "stopping") return;
     if (connection.state.status === VoiceConnectionStatus.Disconnected) {
       this.reconnectCount += 1;
       this.addWarning("Voice connection disconnected during capture.");

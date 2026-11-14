@@ -78,7 +78,7 @@ test("Foundry GM tools preview a draft and post only the edited text", async ({ 
         scenes: { current: null },
         combat: null,
         paused: false,
-        modules: { get: (id) => ({ id, active: false, version: "0.4.0" }) },
+        modules: { get: (id) => ({ id, active: false, version: "0.4.1" }) },
         version: "14.369.0",
         world: { id: "world-a", title: "World A" },
         system: { id: "system-a", version: "1.0" },

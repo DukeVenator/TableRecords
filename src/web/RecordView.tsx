@@ -67,6 +67,8 @@ export interface RecordProps {
   onJoin: () => void;
   onLeave: () => void;
   onStart: (sessionId: string, promptPlayers?: boolean) => void;
+  onPause: (sessionId: string) => void;
+  onResume: (sessionId: string) => void;
   onStop: (sessionId: string) => void;
   onMarker: (sessionId: string, kind: string, mentalNote?: boolean) => void;
   onDeleteMarker: (sessionId: string, markerId: string) => void;
@@ -105,7 +107,10 @@ export function RecordView(props: RecordProps) {
   const session = detail?.session ?? null;
   const capture = status.capture;
   const sessionId = session?.sessionId ?? null;
-  const isThisRecording = Boolean(sessionId && capture.sessionId === sessionId && capture.state === "recording");
+  const isThisRecording = Boolean(
+    sessionId && capture.sessionId === sessionId && ["recording", "paused"].includes(capture.state)
+  );
+  const isPaused = isThisRecording && capture.state === "paused";
   const isTestActive = Boolean(capture.testId && capture.state === "recording");
   const voiceReady = status.voice.state === "ready";
   const botReady = status.bot.state === "ready";
@@ -122,7 +127,7 @@ export function RecordView(props: RecordProps) {
     ["draft", "error"].includes(session!.status) &&
     (consentSatisfied || (promptSupported && promptPlayers)) &&
     Boolean(session!.voiceChannel) &&
-    !capture.state.includes("recording");
+    !["recording", "paused", "stopping"].includes(capture.state);
   const canProcess = Boolean(session) && !["draft", "joining", "recording", "stopping"].includes(session!.status);
 
   const connectedChannel = props.channels.find((channel) => channel.id === status.voice.channelId) ?? null;
@@ -304,9 +309,24 @@ export function RecordView(props: RecordProps) {
 
               <div className="button-row session-actions">
                 {isThisRecording ? (
-                  <Button variant="danger" disabled={Boolean(busy)} onClick={() => props.onStop(session.sessionId)}>
-                    {busy === "stop" ? "Saving…" : "Stop and save"}
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      disabled={Boolean(busy)}
+                      onClick={() => (isPaused ? props.onResume(session.sessionId) : props.onPause(session.sessionId))}
+                    >
+                      {busy === "pause"
+                        ? "Pausing…"
+                        : busy === "resume"
+                          ? "Resuming…"
+                          : isPaused
+                            ? "Resume recording"
+                            : "Pause recording"}
+                    </Button>
+                    <Button variant="danger" disabled={Boolean(busy)} onClick={() => props.onStop(session.sessionId)}>
+                      {busy === "stop" ? "Saving…" : "Stop and save"}
+                    </Button>
+                  </>
                 ) : ["draft", "error"].includes(session.status) ? (
                   <Button
                     variant="primary"
@@ -329,7 +349,11 @@ export function RecordView(props: RecordProps) {
                     )}
                   </>
                 )}
-                {isThisRecording && <span className="live-label"><span className="speaking-dot on" /> recording</span>}
+                {isThisRecording && (
+                  <span className="live-label">
+                    <span className={`speaking-dot${isPaused ? "" : " on"}`} /> {isPaused ? "paused" : "recording"}
+                  </span>
+                )}
               </div>
 
               {isThisRecording && sessionId && (

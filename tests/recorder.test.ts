@@ -3,7 +3,7 @@ import { EventEmitter, once } from "node:events";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { Readable } from "node:stream";
+import { PassThrough, Readable } from "node:stream";
 import prism from "prism-media";
 import { VoiceConnectionStatus } from "@discordjs/voice";
 import { loadConfig } from "../src/server/config.js";
@@ -88,6 +88,72 @@ describe("recorder", () => {
     expect(manifest.items).toHaveLength(1);
     expect(manifest.items[0]?.utteranceId).toBe(record.utteranceId);
     expect(manifest.items[0]?.bytes).toBe(record.bytes);
+  });
+
+  it("pauses and resumes capture without recording while paused", async () => {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "tablerecords-recorder-pause-"));
+    const config = loadConfig({
+      projectRoot: root,
+      dataDir: path.join(root, "data"),
+      sessionsDir: path.join(root, "sessions"),
+      modelsDir: path.join(root, "models")
+    });
+    const packets = await opusPackets(5);
+    const speaking = new EventEmitter();
+    const streams: PassThrough[] = [];
+    let subscriptions = 0;
+    const connection = Object.assign(new EventEmitter(), {
+      state: { status: VoiceConnectionStatus.Ready },
+      receiver: {
+        speaking,
+        subscribe: () => {
+          subscriptions += 1;
+          const stream = new PassThrough();
+          streams.push(stream);
+          return stream;
+        }
+      }
+    });
+    const discord = {
+      voiceConnection: connection,
+      voiceStatus: () => ({ state: "ready" }),
+      botStatus: () => ({ userId: "BOT" }),
+      memberName: async () => "Alice"
+    } as unknown as DiscordService;
+
+    const recorder = new RecorderService(config, discord);
+    cleanup.push(async () => {
+      await recorder.stop("manual").catch(() => undefined);
+      await fsp.rm(root, { recursive: true, force: true });
+    });
+    const sessionId = "2026-01-01-recorder-pause-test";
+    const sessionDir = path.join(root, "sessions", sessionId);
+    await recorder.start({ sessionId, sessionDir });
+
+    speaking.emit("start", "U_ALICE");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(subscriptions).toBe(1);
+    for (const packet of packets) streams[0]!.write(packet);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    await recorder.pause();
+    expect(recorder.captureState).toBe("paused");
+    expect(speaking.listenerCount("start")).toBe(0);
+    expect(await fsp.readdir(path.join(sessionDir, "discord", "audio", "unknown")).catch(() => [])).toHaveLength(0);
+    speaking.emit("start", "U_ALICE");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(subscriptions).toBe(1);
+
+    await recorder.resume();
+    expect(recorder.captureState).toBe("recording");
+    expect(speaking.listenerCount("start")).toBe(1);
+    const utterance = new Promise<DiscordUtterance>((resolve) => recorder.once("utterance", resolve));
+    speaking.emit("start", "U_ALICE");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    for (const packet of packets) streams[1]!.write(packet);
+    streams[1]!.end();
+    expect((await utterance).discordUserId).toBe("U_ALICE");
+    await recorder.stop("stop");
   });
 
   it("does not subscribe to a player who opted out", async () => {
