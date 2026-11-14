@@ -1,5 +1,5 @@
 /*
- * TableRecords Bridge — Foundry VTT module (v0.4.1)
+ * TableRecords Bridge — Foundry VTT module (v0.4.2)
  *
  * The GM client posts live chat/roll messages, scene and combat state, and
  * optional mental notes to a local TableRecords dashboard. When the Break Time
@@ -12,7 +12,7 @@
  */
 (() => {
   const MODULE_ID = "table-records-bridge";
-  const VERSION = "0.4.1";
+  const VERSION = "0.4.2";
   const CONSENT_VERSION = "2026-11-01";
   const CONSENT_NOTICE = [
     "TableRecords records each Discord speaker separately for local tabletop note-taking.",
