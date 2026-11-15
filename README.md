@@ -105,6 +105,7 @@ See [FEATURES.md](FEATURES.md) for the full list.
 ### Foundry bridge
 
 - A live module for chat, rolls, scene and combat state, mental notes, and Break Time.
+- Starting a recording sends the player consent notice and opt-out dialog through the bridge automatically.
 - First-run wizard for a fresh world: dashboard address, bridge token, connection test, and consent, directory, and Break Time switches.
 - GM-only player posts. The dashboard drafts a recap from public material, you edit it privately, then choose **Post to players**. Whispers, blind rolls, and mental notes are excluded.
 - FFG narrative dice, SFRPG, and a generic fallback for other systems.
@@ -116,6 +117,7 @@ The macro export is a lighter option and is documented later.
 
 - Record, Sessions, People, and Setup screens.
 - Seven outputs: `transcript.md`, `chronology.md`, `rolls.csv`, `roll-sync.md`, `mental-notes.md`, `stats.md`, and `notes-ready.md`.
+- New sessions read the selected voice channel and map the people already in it.
 - Resume a saved session to append another recording segment to the same folder.
 - Session stats: length, speech coverage, talk time, turns, rolls, per-player share, longest turn, words per minute.
 - Review audio: a timestamp-aligned master mix plus per-speaker tracks. Clips can be compacted to 16 kHz mono or deleted after the mix is saved.
@@ -196,9 +198,9 @@ npm run build:web
 npm run test:e2e        # dashboard must be running on 127.0.0.1:17300
 ```
 
-The current suite has **144 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
+The current suite has **145 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
 
-GitHub Actions does not run model calls. CI runs `npm run test:ci` (124 tests), lint, typecheck, the web build, and the docs check. A `vX.Y.Z` tag starts a release only if CI passes, and the tag must match `package.json`. Bridge tags use `module-vX.Y.Z` and must match `foundry-module/module.json`.
+GitHub Actions does not run model calls. CI runs `npm run test:ci` (125 tests), lint, typecheck, the web build, and the docs check. A `vX.Y.Z` tag starts a release only if CI passes, and the tag must match `package.json`. Bridge tags use `module-vX.Y.Z` and must match `foundry-module/module.json`.
 
 See [docs/RELEASING.md](docs/RELEASING.md).
 

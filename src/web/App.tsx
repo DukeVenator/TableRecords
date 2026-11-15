@@ -31,6 +31,7 @@ import { SetupWizard } from "./SetupWizard";
 import { AudioTestWizard } from "./AudioTestWizard";
 import { Button, LlmSummaryModal, LogView, Modal, Pill, RecentContextModal } from "./components";
 import { formatDateTime, formatTime, jobLabel } from "./format";
+import { FOUNDRY_CONSENT_COMMAND_VERSION, versionAtLeast } from "../core/version.js";
 
 type Toast = { tone: "ok" | "warn" | "bad"; message: string } | null;
 type LogLine = { seq: number; tsMs: number; level: string; line: string };
@@ -536,10 +537,16 @@ export default function App() {
       showToast("ok", "Left the voice channel");
     });
 
-  const startSession = (sessionId: string, promptPlayers = false) => {
+  const startSession = (sessionId: string, promptPlayers = true) => {
     const resuming = ["ready", "captured"].includes(detail?.session.status ?? "");
+    const canPrompt = Boolean(
+      status?.foundry.live.enabled &&
+        status.foundry.live.connected &&
+        versionAtLeast(status.foundry.live.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION)
+    );
+    const sendPrompt = promptPlayers && canPrompt;
     return runTask("start", async () => {
-      const next = await post<Status>(`/api/sessions/${sessionId}/start`, { promptPlayers });
+      const next = await post<Status>(`/api/sessions/${sessionId}/start`, { promptPlayers: sendPrompt });
       setStatus(next);
       await loadDetail(sessionId);
       await loadSessions();
@@ -547,7 +554,7 @@ export default function App() {
         "ok",
         resuming
           ? "Recording resumed"
-          : promptPlayers
+          : sendPrompt
             ? "Recording started · consent prompt sent to Foundry"
             : "Recording started"
       );
@@ -1106,6 +1113,11 @@ export default function App() {
             busy={busy}
             markerLabel={markerLabel}
             botReady={status?.bot.state === "ready"}
+            promptSupported={Boolean(
+              status?.foundry.live.enabled &&
+                status.foundry.live.connected &&
+                versionAtLeast(status.foundry.live.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION)
+            )}
             captureState={status?.capture.state ?? "idle"}
             captureSessionId={status?.capture.sessionId ?? null}
             onSelect={selectSession}

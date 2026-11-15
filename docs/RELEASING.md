@@ -27,7 +27,7 @@ Two release tags exist:
 
 Those suites exercise provider calls, llama.cpp, and prompt budgets locally. GitHub Actions does not start Ollama, llama.cpp, or any model server, and does not run Playwright, the live Ollama check, or any summary against a real session.
 
-The current CI selection is **124 tests**.
+The current CI selection is **125 tests**.
 
 ## Dashboard release
 

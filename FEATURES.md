@@ -28,6 +28,7 @@ We recommend the bridge. It sends chat, rolls, scene and combat state, mental no
 - GM-only player posts. The dashboard drafts a recap, important names, or clues from public speech, chat, and rolls. You edit the draft in a private preview, then choose **Post to players**. Whispers, blind rolls, mental notes, and earlier generated posts are excluded.
 - FFG narrative dice, SFRPG, and a generic formula/total fallback.
 - Live events and the macro fallback deduplicate by message ID.
+- Starting a recording sends the player consent notice and opt-out dialog through the bridge automatically.
 - If you want a lighter setup, use the macro export instead.
 
 ## Sessions
@@ -35,6 +36,7 @@ We recommend the bridge. It sends chat, rolls, scene and combat state, mental no
 - Record, Sessions, People, and Setup screens.
 - Session folders with `session.json`, `people.json`, transcript, Foundry events, markers, timeline, outputs, and audio.
 - Seven outputs: `transcript.md`, `chronology.md`, `rolls.csv`, `roll-sync.md`, `mental-notes.md`, `stats.md`, `notes-ready.md`.
+- New sessions read the selected voice channel and map the people already in it.
 - Resume a saved session to append another recording segment to the same folder.
 - Stats for length, speech coverage, talk time, words, turns, rolls, per-player share, longest turn, words per minute, and first/last heard.
 - Search, status filters, game grouping, archive, and guarded delete.
@@ -80,6 +82,6 @@ This part is off by default and never writes into the canonical outputs.
 
 ## Status
 
-The local suite has 144 tests across 44 files. Playwright adds 11 browser checks and one opt-in live Ollama check. GitHub Actions runs a 124-test non-LLM selection, typecheck, web build, and docs check.
+The local suite has 145 tests across 44 files. Playwright adds 11 browser checks and one opt-in live Ollama check. GitHub Actions runs a 125-test non-LLM selection, typecheck, web build, and docs check.
 
 Planned work is in [ROADMAP.md](ROADMAP.md).

@@ -162,6 +162,32 @@ describe("HTTP API", () => {
     expect(startWithoutBot.json()).toMatchObject({ error: { code: "discord_not_ready" } });
   });
 
+  it("maps the selected voice channel into a new session", async () => {
+    const app = await makeApp();
+    app.discord.listChannelMembers = async () => [
+      { userId: "U_ALICE", displayName: "Alice", username: "alice", isBot: false },
+      { userId: "U_BOB", displayName: "Bob", username: "bob", isBot: false },
+      { userId: "U_BOT", displayName: "Music", username: "music", isBot: true }
+    ];
+    const created = await app.fastify.inject({
+      method: "POST",
+      url: "/api/sessions",
+      headers: { "content-type": "application/json" },
+      payload: {
+        title: "Voice channel mapping",
+        guildId: "G1",
+        voiceChannelId: "V1",
+        participants: [{ discordUserId: "U_ALICE", discordName: "Alice saved" }],
+        consent: { confirmed: true, confirmedBy: "GM" }
+      }
+    });
+    expect(created.statusCode).toBe(201);
+    const detail = created.json() as { people: Array<{ discordUserId: string; discordName: string }> };
+    expect(detail.people.map((person) => person.discordUserId).sort()).toEqual(["U_ALICE", "U_BOB"]);
+    expect(detail.people.find((person) => person.discordUserId === "U_ALICE")?.discordName).toBe("Alice saved");
+    expect(detail.people.find((person) => person.discordUserId === "U_BOB")?.discordName).toBe("Bob");
+  });
+
   it("accepts bodyless JSON commands and rejects cross-origin mutations", async () => {
     const app = await makeApp();
     const withOrigin = await app.fastify.inject({

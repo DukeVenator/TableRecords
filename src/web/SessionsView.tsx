@@ -62,6 +62,7 @@ export interface SessionsProps {
   busy: string | null;
   markerLabel: string;
   botReady: boolean;
+  promptSupported: boolean;
   captureState: string;
   captureSessionId: string | null;
   onSelect: (id: string) => void;
@@ -292,7 +293,7 @@ export function SessionsView(props: SessionsProps) {
   const canStart =
     Boolean(session) &&
     ["draft", "error", "ready", "captured"].includes(session!.status) &&
-    (session!.consent.confirmed || foundryPromptFresh) &&
+    (session!.consent.confirmed || foundryPromptFresh || props.promptSupported) &&
     props.botReady &&
     !busy;
   const canProcess = Boolean(session) && !["draft", "joining", "recording", "stopping"].includes(session!.status);
@@ -695,7 +696,7 @@ export function SessionsView(props: SessionsProps) {
                 ))}
               </select>
             </Field>
-            <Field label="Voice channel">
+            <Field label="Voice channel" hint="Players already in this channel are added when the session is created.">
               <select value={props.channelId} onChange={(event) => props.onChannel(event.target.value)}>
                 <option value="">No channel</option>
                 {props.channels.map((channel) => (
@@ -925,7 +926,7 @@ export function SessionsView(props: SessionsProps) {
                 <p className="muted small">
                   {!props.botReady
                     ? "Start needs the Discord bot. Check Setup."
-                    : !(session.consent.confirmed || foundryPromptFresh)
+                    : !(session.consent.confirmed || foundryPromptFresh || props.promptSupported)
                       ? "Show players the recording notice first, then confirm it under Recording consent."
                       : !session.voiceChannel
                         ? "Choose a voice channel for this session before starting."

@@ -38,11 +38,11 @@ The default landing view, designed to fit on one screen while a session is runni
 - **Session card:** title, date, world, status, and four facts (started, length, consent, notes).
   The primary action follows the state: **Start recording**, **Pause recording**, **Resume
   recording**, **Stop and save**, **Open session**, or **Build notes** when the notes are missing or
-  out of date. When the Foundry bridge is live, a
-  **Prompt players in Foundry when recording starts** tick sends the consent notice through the
-  bridge (checked whenever the bridge is live; untick to skip); the dashboard records the prompt and
-  starts immediately, dropping anyone who opts out. A pre-flight panel explains any other blocker
-  inline (bot not connected, notice not shown, no voice channel) with the action that clears it.
+  out of date. When the Foundry bridge is live and current, starting a session automatically sends
+  the player consent notice through the bridge; the dashboard records the prompt and starts
+  immediately, dropping anyone who opts out. Record still exposes a tick to skip that prompt. A
+  pre-flight panel explains any other blocker inline (bot not connected, notice not shown, no voice
+  channel) with the action that clears it.
 - **Voice channel:** server and channel pickers, **Join**, **Leave**, and **Test audio**. A test
   reports clips and bytes per person, decryption errors, and the test ID, and names the likely fix
   when no audio arrives. **Connection details** exposes DAVE state, the voice privacy code,
@@ -76,10 +76,12 @@ where it is useful.
   Foundry world title, then “Unsorted”), with a filter to show one game. Each group is collapsible
   and shows its recording count; rows show title, date, system, length, and status.
 - **New session:** **Start from a previous session** copies its world, game/campaign, and player
-  table in one choice; edit an individual character when a player swaps. The table is a row editor
-  (name, optional Discord ID, character, role) with **Add a saved player** from People and previous
-  sessions, **Add blank row**, and remove. The GM has separate name/ID fields. Title, server, voice
-  channel, notes, and consent are below. No `name | id | character` text is required.
+  table in one choice; edit an individual character when a player swaps. Choosing a voice channel
+  adds the people already in it and matches them to the world roster before the session is created.
+  The table remains a row editor (name, optional Discord ID, character, role) with **Add a saved
+  player** from People and previous sessions, **Add blank row**, and remove. The GM has separate
+  name/ID fields. Title, server, voice channel, notes, and consent are below. No
+  `name | id | character` text is required.
 - **Session header:** date, length, and people count, the current status, a contextual primary
   action (**Start recording**, **Pause** or **Resume recording**, **Stop and save**, **Build
   notes**, or **Open folder**), **Copy ID**,

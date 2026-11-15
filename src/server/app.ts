@@ -2455,6 +2455,32 @@ export class TableRecordsApp {
               : undefined
         };
       });
+      // A GM should not have to retype the people already sitting in the
+      // selected voice channel. Match them to the world roster where possible,
+      // then leave the normal mapping editor available for corrections.
+      if (channelId) {
+        const members = await this.discord.listChannelMembers(channelId).catch(() => []);
+        const roster = world ? this.store.listRoster(world.id) : [];
+        for (const member of members) {
+          if (member.isBot) continue;
+          const profile = roster.find((person) => person.discordUserId === member.userId);
+          const existing = participants.find((person) => person.discordUserId === member.userId);
+          if (existing) {
+            existing.discordName ??= profile?.discordName ?? member.displayName;
+            existing.character ??= profile?.character ?? null;
+            if (existing.role === "player" && profile?.role) existing.role = profile.role;
+            continue;
+          }
+          participants.push({
+            discordUserId: member.userId,
+            discordName: profile?.discordName ?? member.displayName,
+            character: profile?.character ?? null,
+            role: profile?.role ?? "player",
+            consent: true,
+            consentStatus: "assumed"
+          });
+        }
+      }
       const consentRaw = isRecord(body.consent) ? body.consent : {};
       const session = await this.sessions.create({
         title: str(body.title) ?? undefined,
@@ -2716,8 +2742,14 @@ export class TableRecordsApp {
     };
 
     app.post<{ Params: { id: string }; Body?: { promptPlayers?: boolean } }>("/api/sessions/:id/start", async (request) => {
-      const promptPlayers = isRecord(request.body) && request.body.promptPlayers === true;
-      return startRecordingSession(request.params.id, promptPlayers);
+      const wantsPrompt = !isRecord(request.body) || request.body.promptPlayers !== false;
+      const bridge = this.liveStatusSnapshot();
+      const canPrompt =
+        wantsPrompt &&
+        bridge.enabled &&
+        bridge.connected &&
+        versionAtLeast(bridge.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION);
+      return startRecordingSession(request.params.id, canPrompt);
     });
 
     app.post<{ Params: { id: string } }>("/api/sessions/:id/pause", async (request) => {
