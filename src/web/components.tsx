@@ -135,14 +135,47 @@ export function Disclosure({
 }
 
 export function Warnings({ warnings }: { warnings: Array<{ code: string; message: string }> }) {
-  if (warnings.length === 0) return null;
+  const [dismissed, setDismissed] = useState<string[]>([]);
+  const signature = warnings.map((warning, index) => `${warning.code}-${index}-${warning.message}`).join("|");
+  useEffect(() => setDismissed([]), [signature]);
+  if (warnings.slice(0, 8).every((_warning, index) => dismissed.includes(String(index)))) return null;
   return (
     <div className="warnings">
-      {warnings.slice(0, 8).map((warning, index) => (
-        <div className="warning" key={`${warning.code}-${index}`} title={warning.code}>
-          <span>{warning.message}</span>
-        </div>
-      ))}
+      {warnings.slice(0, 8).map((warning, index) =>
+        dismissed.includes(String(index)) ? null : (
+          <div className="warning" key={`${warning.code}-${index}`} title={warning.code}>
+            <span>{warning.message}</span>
+            <button
+              type="button"
+              className="notice-dismiss"
+              aria-label="Dismiss warning"
+              onClick={() => setDismissed((current) => [...current, String(index)])}
+            >
+              ×
+            </button>
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+export function DismissibleNotice({
+  message,
+  tone = "bad"
+}: {
+  message: string | null | undefined;
+  tone?: "bad" | "warn";
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  useEffect(() => setDismissed(false), [message]);
+  if (!message || dismissed) return null;
+  return (
+    <div className={`dismissible-notice ${tone}`} role="alert">
+      <span>{message}</span>
+      <button type="button" className="notice-dismiss" aria-label="Dismiss error" onClick={() => setDismissed(true)}>
+        ×
+      </button>
     </div>
   );
 }

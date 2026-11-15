@@ -12,7 +12,7 @@ import type {
   World
 } from "./types";
 import { api, post } from "./api";
-import { Button, Card, Disclosure, Field, Pill, Stat } from "./components";
+import { Button, Card, Disclosure, DismissibleNotice, Field, Pill, Stat } from "./components";
 import { formatBytes, formatDateTime, formatRelative, statusTone, sttStateLabel } from "./format";
 import { DISCORD_DEVELOPER_PORTAL, botInviteUrl, buildSetupSteps, setupProgress, type SetupStep } from "./setupStatus";
 import { FOUNDRY_CONSENT_COMMAND_VERSION, versionAtLeast } from "../core/version.js";
@@ -893,7 +893,7 @@ export function SetupView(props: SetupProps) {
               ? "Foundry is sending rolls, scene changes, and the player list."
               : "Foundry is not connected. If you want a lighter setup, use the macro below."}
           </span>
-          {bridgeStatus.lastError && <span className="bad-text small">{bridgeStatus.lastError}</span>}
+          <DismissibleNotice message={bridgeStatus.lastError} />
         </div>
         {bridgeStatus.connected && !versionAtLeast(bridgeStatus.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION) && (
           <p className="warn-text small">
@@ -1242,7 +1242,7 @@ export function SetupView(props: SetupProps) {
                 The saved launch settings differ from the running server. Restart it to apply them.
               </p>
             )}
-            {llamaStatus?.lastError && <p className="bad-text small">{llamaStatus.lastError}</p>}
+            <DismissibleNotice message={llamaStatus?.lastError} />
             <div className="button-row">
               <Button
                 variant="small"
@@ -1303,7 +1303,7 @@ export function SetupView(props: SetupProps) {
             {llmModels.length} model{llmModels.length === 1 ? "" : "s"} found. Pick one above or type a name.
           </p>
         )}
-        {llmModelsError && <p className="warn-text small">{llmModelsError}</p>}
+        <DismissibleNotice message={llmModelsError} tone="warn" />
         {llmTest && (
           <p className="ok-text small">
             Connected to {llmTest.provider === "deepseek" ? "DeepSeek" : "the local model server"} in {(llmTest.latencyMs / 1000).toFixed(1)}s.

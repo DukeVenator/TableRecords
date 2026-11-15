@@ -1200,8 +1200,19 @@ export default function App() {
       </main>
 
       {toast && (
-        <div className={`toast ${toast.tone}`} onClick={() => setToast(null)}>
-          {toast.message}
+        <div className={`toast ${toast.tone}`} onClick={() => setToast(null)} role="status">
+          <span>{toast.message}</span>
+          <button
+            type="button"
+            className="notice-dismiss"
+            aria-label="Dismiss message"
+            onClick={(event) => {
+              event.stopPropagation();
+              setToast(null);
+            }}
+          >
+            ×
+          </button>
         </div>
       )}
 

@@ -20,6 +20,7 @@ import {
   Pill,
   SpeakerTable,
   Stat,
+  DismissibleNotice,
   Warnings,
   markersToMoments,
   type Moment
@@ -456,7 +457,7 @@ export function RecordView(props: RecordProps) {
           {!status.bot.configured && (
             <p className="muted small">No bot token yet. Add <code>DISCORD_TOKEN</code> to <code>.env</code> and restart to record voice.</p>
           )}
-          {status.voice.error && <p className="bad-text small">{status.voice.error}</p>}
+          <DismissibleNotice message={status.voice.error} />
           {props.captureTest && (
             <div className={`test-result ${props.captureTest.totalBytes > 0 ? "ok" : "bad"}`}>
               <strong>{props.captureTest.totalBytes > 0 ? "Audio test passed" : "No audio reached the bot"}</strong>
