@@ -545,7 +545,13 @@ export default function App() {
         versionAtLeast(status.foundry.live.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION)
     );
     const sendPrompt = promptPlayers && canPrompt;
+    const promptFresh =
+      detail?.consentPrompt != null && Date.now() - detail.consentPrompt.promptedAtMs < 24 * 60 * 60_000;
+    const waitForConsent = sendPrompt && !detail?.session.consent.confirmed && !promptFresh;
     return runTask("start", async () => {
+      if (waitForConsent) {
+        showToast("warn", "Waiting 30 seconds for players to answer the consent prompt…");
+      }
       const next = await post<Status>(`/api/sessions/${sessionId}/start`, { promptPlayers: sendPrompt });
       setStatus(next);
       await loadDetail(sessionId);

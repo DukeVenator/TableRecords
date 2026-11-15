@@ -39,10 +39,10 @@ The default landing view, designed to fit on one screen while a session is runni
   The primary action follows the state: **Start recording**, **Pause recording**, **Resume
   recording**, **Stop and save**, **Open session**, or **Build notes** when the notes are missing or
   out of date. When the Foundry bridge is live and current, starting a session automatically sends
-  the player consent notice through the bridge; the dashboard records the prompt and starts
-  immediately, dropping anyone who opts out. Record still exposes a tick to skip that prompt. A
-  pre-flight panel explains any other blocker inline (bot not connected, notice not shown, no voice
-  channel) with the action that clears it.
+  the player consent notice through the bridge. The dashboard waits 30 seconds for answers, then
+  assumes consent and starts; anyone who opted out is dropped. Record still exposes a tick to skip
+  that prompt. A pre-flight panel explains any other blocker inline (bot not connected, notice not
+  shown, no voice channel) with the action that clears it.
 - **Voice channel:** server and channel pickers, **Join**, **Leave**, and **Test audio**. A test
   reports clips and bytes per person, decryption errors, and the test ID, and names the likely fix
   when no audio arrives. **Connection details** exposes DAVE state, the voice privacy code,

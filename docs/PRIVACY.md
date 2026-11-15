@@ -21,8 +21,9 @@ The intended flow:
 
 1. **With the Foundry module:** players receive the automatic prompt on load, and the GM can tick
    **Prompt players in Foundry when recording starts** on Record. The dashboard records the prompt,
-   queues a bridge command, and starts recording; players who opt out are dropped. No console command
-   is required. The prompt itself (or any player response) unlocks start without a separate GM tick.
+   queues a bridge command, and waits 30 seconds before assuming consent and starting; players who
+   opt out are dropped. No console command is required. The prompt itself (or any player response)
+   unlocks start without a separate GM tick.
 2. **Without the module:** the GM ticks the dashboard fallback box:
    "I have shown players this notice… consent is assumed unless a player opts out."
 3. **Any time:** the GM can mark a player opted out in **Sessions → People → Record**. Opted-out

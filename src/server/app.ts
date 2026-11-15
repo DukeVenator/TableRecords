@@ -100,6 +100,7 @@ const SESSION_COOKIE = "tr_session";
 const MAX_JSON_BODY = 1024 * 1024;
 const MAX_UPLOAD = 64 * 1024 * 1024;
 const MARKER_KINDS = new Set<MarkerKind>(["scene", "break", "combat", "note", "other"]);
+const CONSENT_ASSUME_AFTER_MS = 30_000;
 const LIVE_ACTIVE_STATUSES = new Set<SessionStatus>(["joining", "recording", "stopping"]);
 function insertFactUnderHeading(markdown: string, heading: string, fact: string): string {
   const headingPattern = new RegExp(`^##\\s*${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "im");
@@ -2673,15 +2674,24 @@ export class TableRecordsApp {
           noticeVersion: CONSENT_NOTICE_VERSION
         });
         if (!session.consent.confirmed) {
-          session = await this.sessions.confirmConsent(session, {
-            method: "foundry",
-            confirmedBy: "Foundry player consent prompt",
-            atMs: promptedAtMs,
-            promptedAtMs,
-            noticeVersion: CONSENT_NOTICE_VERSION,
-            notes: `${session.consent.notes ? `${session.consent.notes}\n` : ""}Consent prompt sent to players in Foundry; consent is assumed unless a player opted out.`
-          });
-          this.sse.broadcast("session.updated", { sessionId: session.sessionId, status: session.status });
+          // Give players a short window to answer the prompt. A response can
+          // confirm consent early; if nobody answers, consent is assumed.
+          const deadline = Date.now() + CONSENT_ASSUME_AFTER_MS;
+          while (!session.consent.confirmed && Date.now() < deadline) {
+            await new Promise((resolve) => setTimeout(resolve, 1_000));
+            session = await this.sessions.get(session.sessionId);
+          }
+          if (!session.consent.confirmed) {
+            session = await this.sessions.confirmConsent(session, {
+              method: "foundry",
+              confirmedBy: "Foundry player consent prompt",
+              atMs: Date.now(),
+              promptedAtMs,
+              noticeVersion: CONSENT_NOTICE_VERSION,
+              notes: `${session.consent.notes ? `${session.consent.notes}\n` : ""}Consent prompt sent to players in Foundry; no player answered within 30 seconds, so consent is assumed unless a player opted out.`
+            });
+            this.sse.broadcast("session.updated", { sessionId: session.sessionId, status: session.status });
+          }
         }
       }
       if (!session.consent.confirmed && promptFresh) {
