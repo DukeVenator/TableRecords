@@ -179,6 +179,33 @@ describe("HTTP API", () => {
     expect((leave.json() as { bot: { state: string } }).bot.state).toBe("not_configured");
   });
 
+  it("allows a saved session to resume recording", async () => {
+    const app = await makeApp();
+    const created = await app.fastify.inject({
+      method: "POST",
+      url: "/api/sessions",
+      headers: { "content-type": "application/json" },
+      payload: {
+        title: "Resume test",
+        guildId: "G1",
+        voiceChannelId: "V1",
+        consent: { confirmed: true, confirmedBy: "GM" }
+      }
+    });
+    const sessionId = (created.json() as { session: { sessionId: string } }).session.sessionId;
+    const session = await app.sessions.get(sessionId);
+    await app.sessions.setStatus(session, "ready", { startedAtMs: 1_000, stoppedAtMs: 2_000 });
+
+    const resumed = await app.fastify.inject({
+      method: "POST",
+      url: `/api/sessions/${sessionId}/start`,
+      headers: { "content-type": "application/json" },
+      payload: {}
+    });
+    expect(resumed.statusCode).toBe(409);
+    expect(resumed.json()).toMatchObject({ error: { code: "discord_not_ready" } });
+  });
+
   it("authenticates bridge recording controls and reports their state", async () => {
     const app = await makeApp();
     const settings = await app.fastify.inject({ method: "GET", url: "/api/settings" });

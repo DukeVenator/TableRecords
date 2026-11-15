@@ -91,6 +91,11 @@ then maps each `<utteranceId>.json` back into the normal
 `tablerecords.transcript/v1` record. The native runtime downmixes/resamples the
 48 kHz stereo WAVs to the model’s 16 kHz mono input.
 
+If the CUDA model load fails, the wrapper retries the batch once with
+`--device cpu` and records `device: "cpu"` on the transcripts. The retry is
+slower, but it keeps a live session from losing every clip after a GPU memory
+failure.
+
 **Measured on the live test clips:** 10 utterances, 10 transcripts, 0 errors,
 **1.1 s** inference. The dashboard `transcribe` job completed in **1.2 s**.
 `/api/status` reports `engine=parakeet`, the model, and `state=ready`.
@@ -467,10 +472,12 @@ If CUDA is unavailable or fails validation:
 
 or `medium.en` if acceptable for the session length. CPU decoding uses the same
 job/transcript contract and records `device: "cpu"` in every STT metadata block.
-Never switch device silently in the middle of a job run; the dashboard must show
-the selected mode, and a failed GPU run must be explicitly retried on CPU. CPU
-throughput on a 4-hour multi-speaker session can be substantial; document the
-expected mode in the session notes.
+Parrot has a **Use CPU instead of the graphics card** checkbox for this path. It
+applies as soon as it is toggled. If the box is clear and CUDA fails, the
+Parakeet wrapper retries the batch once on CPU and records the switch in the job
+log and transcript metadata. CPU throughput
+on a 4-hour multi-speaker session can be substantial; document the expected mode
+in the session notes.
 
 ## Privacy and offline behavior
 

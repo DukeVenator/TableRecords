@@ -115,7 +115,10 @@ export async function transcribeRecentWindow(params: {
     candidates: windowUtterances.length,
     transcribed,
     alreadyPresent,
-    failed: Math.max(errors.length, missing.length - transcribed - (batch.skippedOptOut ?? 0)),
+    failed: Math.max(
+      errors.length,
+      missing.length - transcribed - (batch.skippedOptOut ?? 0) - (batch.skippedSilent ?? 0)
+    ),
     skippedSilent: batch.skippedSilent,
     skippedOptOut: batch.skippedOptOut,
     errors,

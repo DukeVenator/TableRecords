@@ -121,10 +121,11 @@ export function RecordView(props: RecordProps) {
   const promptSupported =
     bridgeConnected && versionAtLeast(status.foundry.live.moduleVersion, FOUNDRY_CONSENT_COMMAND_VERSION);
   const promptPlayers = promptChoice ?? promptSupported;
+  const resumable = Boolean(session) && ["ready", "captured"].includes(session!.status);
   const canStart =
     Boolean(session) &&
     botReady &&
-    ["draft", "error"].includes(session!.status) &&
+    ["draft", "error", "ready", "captured"].includes(session!.status) &&
     (consentSatisfied || (promptSupported && promptPlayers)) &&
     Boolean(session!.voiceChannel) &&
     !["recording", "paused", "stopping"].includes(capture.state);
@@ -334,6 +335,14 @@ export function RecordView(props: RecordProps) {
                     onClick={() => props.onStart(session.sessionId, promptPlayers)}
                   >
                     {busy === "start" ? "Starting…" : "Start recording"}
+                  </Button>
+                ) : resumable ? (
+                  <Button
+                    variant="primary"
+                    disabled={!canStart || Boolean(busy)}
+                    onClick={() => props.onStart(session.sessionId)}
+                  >
+                    {busy === "start" ? "Resuming…" : "Resume recording"}
                   </Button>
                 ) : session.status === "processing" ? (
                   <span className="muted small">Processing the recording…</span>

@@ -21,6 +21,7 @@ import type {
   SessionMentalNote,
   SessionRecord,
   SessionStatus,
+  TimelineEvent,
   TranscriptRecord
 } from "../core/types.js";
 import {
@@ -97,8 +98,18 @@ export interface SessionDetail {
     transcriptRecords: number;
     foundryEvents: number;
     timelineEvents: number;
+    rolls: number;
     outputs: number;
   };
+  rolls: Array<{
+    tsMs: number;
+    actorName: string | null;
+    character: string | null;
+    formula: string;
+    summary: string;
+    total: number | null;
+    flavor: string | null;
+  }>;
   foundrySummary: FoundryImportSummary | null;
   foundryLive: FoundryLiveState | null;
   reviewAudio: ReviewAudioFile[];
@@ -338,7 +349,7 @@ export class SessionManager {
     const foundry = await readJsonl<FoundryEvent>(path.join(dir, "foundry", "events.jsonl"));
     const live = await readJsonl<FoundryEvent>(path.join(dir, "foundry", "live-events.jsonl"));
     const foundryLive = await readJson<FoundryLiveState>(path.join(dir, "foundry", "live-state.json"));
-    const timeline = await readJsonl(path.join(dir, "merged", "timeline.jsonl"));
+    const timeline = await readJsonl<TimelineEvent>(path.join(dir, "merged", "timeline.jsonl"));
     const foundrySummary = await readJson<FoundryImportSummary>(path.join(dir, "foundry", "import-summary.json"));
     const reviewAudio = await readJson<ReviewAudioManifest>(path.join(dir, "review", "manifest.json"));
     let outputs = 0;
@@ -383,8 +394,20 @@ export class SessionManager {
         transcriptRecords: transcript.items.length,
         foundryEvents: new Set([...foundry.items, ...live.items].map((event) => event.eventId)).size,
         timelineEvents: timeline.items.length,
+        rolls: timeline.items.filter((event) => event.type === "roll").length,
         outputs
       },
+      rolls: timeline.items
+        .filter((event) => event.type === "roll")
+        .map((event) => ({
+          tsMs: event.tsMs,
+          actorName: event.actor?.name ?? null,
+          character: event.actor?.character ?? null,
+          formula: event.roll?.formula ?? "",
+          summary: event.roll?.summary ?? "",
+          total: event.roll?.total ?? null,
+          flavor: event.text?.trim() || null
+        })),
       foundrySummary: foundrySummary ?? null,
       foundryLive: foundryLive ?? null,
       reviewAudio: reviewAudio?.schema === "tablerecords.review-audio/v1" ? reviewAudio.files : [],

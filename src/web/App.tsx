@@ -536,14 +536,23 @@ export default function App() {
       showToast("ok", "Left the voice channel");
     });
 
-  const startSession = (sessionId: string, promptPlayers = false) =>
-    runTask("start", async () => {
+  const startSession = (sessionId: string, promptPlayers = false) => {
+    const resuming = ["ready", "captured"].includes(detail?.session.status ?? "");
+    return runTask("start", async () => {
       const next = await post<Status>(`/api/sessions/${sessionId}/start`, { promptPlayers });
       setStatus(next);
       await loadDetail(sessionId);
       await loadSessions();
-      showToast("ok", promptPlayers ? "Recording started · consent prompt sent to Foundry" : "Recording started");
+      showToast(
+        "ok",
+        resuming
+          ? "Recording resumed"
+          : promptPlayers
+            ? "Recording started · consent prompt sent to Foundry"
+            : "Recording started"
+      );
     });
+  };
 
   const stopSession = (sessionId: string) =>
     runTask("stop", async () => {
@@ -683,29 +692,51 @@ export default function App() {
     }
   };
 
+  const scrollPreviewTarget = (target: HTMLElement) => {
+    const container = previewBodyRef.current;
+    if (!container || !container.contains(target)) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    const top =
+      container.scrollTop + target.getBoundingClientRect().top - container.getBoundingClientRect().top - 18;
+    container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
+
   const scrollPreviewHeading = (id: string) => {
     const container = previewBodyRef.current;
     const target = container?.querySelector<HTMLElement>(`#${CSS.escape(id)}`) ?? document.getElementById(id);
-    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (target) scrollPreviewTarget(target);
   };
 
   const scrollPreviewClock = (clock: string) => {
     const container = previewBodyRef.current;
     if (!container) return;
+    const wanted = /^(\d{1,2}):(\d{2}):(\d{2})$/.exec(clock);
+    if (!wanted) return;
+    const wantedSeconds = Number(wanted[1]) * 3600 + Number(wanted[2]) * 60 + Number(wanted[3]);
+
+    // A marker can fall between two transcript entries, so navigate to the
+    // closest spoken line rather than requiring an exact clock match.
+    let best: { target: HTMLElement; distance: number } | null = null;
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
     let node = walker.nextNode();
     while (node) {
-      if (node.textContent?.includes(clock)) {
-        const target = node.parentElement;
-        if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-          target.classList.add("preview-flash");
-          window.setTimeout(() => target.classList.remove("preview-flash"), 1200);
+      const text = node.textContent ?? "";
+      for (const match of text.matchAll(/\b(\d{1,2}):(\d{2}):(\d{2})\b/g)) {
+        const seconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+        const distance = Math.min(Math.abs(seconds - wantedSeconds), 86_400 - Math.abs(seconds - wantedSeconds));
+        if (!best || distance < best.distance) {
+          const target = node.parentElement?.closest<HTMLElement>("p, li, h1, h2, h3, h4, h5, h6") ?? node.parentElement;
+          if (target) best = { target, distance };
         }
-        return;
       }
       node = walker.nextNode();
     }
+    if (!best) return;
+    scrollPreviewTarget(best.target);
+    best.target.classList.add("preview-flash");
+    window.setTimeout(() => best?.target.classList.remove("preview-flash"), 1200);
   };
 
   const importFoundry = (sessionId: string, file: File) =>
@@ -1075,11 +1106,15 @@ export default function App() {
             busy={busy}
             markerLabel={markerLabel}
             botReady={status?.bot.state === "ready"}
+            captureState={status?.capture.state ?? "idle"}
+            captureSessionId={status?.capture.sessionId ?? null}
             onSelect={selectSession}
             onGuild={(value) => { setGuildId(value); setChannelId(""); }}
             onChannel={setChannelId}
             onCreate={createSession}
             onStart={startSession}
+            onPause={pauseSession}
+            onResume={resumeSession}
             onStop={stopSession}
             onMarker={(sessionId, kind, mentalNote) => void addMarker(sessionId, kind, mentalNote)}
             onDeleteMarker={(sessionId, markerId) => void deleteMarker(sessionId, markerId)}

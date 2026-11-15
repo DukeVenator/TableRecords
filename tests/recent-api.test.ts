@@ -88,25 +88,49 @@ describe("recent context API", () => {
     await fsp.writeFile(path.join(dir, "discord", "audio", "U1", "u_recent.wav"), "fake wav");
     await fsp.writeFile(
       path.join(dir, "discord", "manifest.jsonl"),
-      `${JSON.stringify({
-        schema: "tablerecords.discord-utterance/v1",
-        sessionId,
-        utteranceId: "u_recent",
-        discordUserId: "U1",
-        displayName: "Alice",
-        file: "discord/audio/U1/u_recent.wav",
-        startMs: now - 8_000,
-        endMs: now - 6_500,
-        durationMs: 1500,
-        sampleRate: 48_000,
-        channels: 2,
-        format: "wav",
-        encoding: "pcm_s16le",
-        bytes: 8,
-        streamEnd: "silence",
-        decryptionFailures: 0,
-        createdAtMs: now
-      })}\n`,
+      [
+        {
+          schema: "tablerecords.discord-utterance/v1",
+          sessionId,
+          utteranceId: "u_recent",
+          discordUserId: "U1",
+          displayName: "Alice",
+          file: "discord/audio/U1/u_recent.wav",
+          startMs: now - 8_000,
+          endMs: now - 6_500,
+          durationMs: 1500,
+          sampleRate: 48_000,
+          channels: 2,
+          format: "wav",
+          encoding: "pcm_s16le",
+          bytes: 8,
+          streamEnd: "silence",
+          decryptionFailures: 0,
+          createdAtMs: now
+        },
+        {
+          schema: "tablerecords.discord-utterance/v1",
+          sessionId,
+          utteranceId: "u_silent",
+          discordUserId: "U1",
+          displayName: "Alice",
+          file: "discord/audio/U1/u_silent.wav",
+          startMs: now - 5_000,
+          endMs: now - 4_500,
+          durationMs: 500,
+          sampleRate: 48_000,
+          channels: 2,
+          format: "wav",
+          encoding: "pcm_s16le",
+          bytes: 8,
+          streamEnd: "silence",
+          decryptionFailures: 0,
+          silent: true,
+          createdAtMs: now
+        }
+      ]
+        .map((utterance) => JSON.stringify(utterance))
+        .join("\n") + "\n",
       "utf8"
     );
     await app.sessions.setStatus(session, "captured", { startedAtMs: now - 60_000, stoppedAtMs: now });
@@ -133,10 +157,11 @@ describe("recent context API", () => {
     const body = result.json() as {
       markdown: string;
       counts: { speech: number; rolls: number };
-      transcription: { transcribed: number; failed: number };
+      transcription: { transcribed: number; failed: number; skippedSilent: number };
     };
     expect(body.transcription.transcribed).toBe(1);
     expect(body.transcription.failed).toBe(0);
+    expect(body.transcription.skippedSilent).toBe(1);
     expect(body.counts.speech).toBe(1);
     expect(body.markdown).toContain("Recent API Test");
     expect(body.markdown).toContain("Hello from the fake STT.");

@@ -325,6 +325,9 @@ textarea { resize: vertical; }
 .checkbox { display: flex; align-items: flex-start; gap: 9px; font-size: 12.5px; }
 .checkbox input { width: auto; margin-top: 3px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.model-picker { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.model-picker input,
+.model-picker select { flex: 1 1 260px; min-width: 0; }
 @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
 .consent-box { border: 1px solid var(--border); background: #0d151d; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
 .consent-box .field { max-width: 280px; margin: 10px 0 0 24px; }
@@ -384,6 +387,16 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.015); }
 .empty strong { display: block; color: #c4d2df; margin-bottom: 4px; }
 .empty p { margin: 0; font-size: 12.5px; }
 
+.roll-list { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 16px 0; }
+.roll-list h3 { margin: 0; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); font-size: 13px; }
+.roll-row { display: grid; grid-template-columns: 70px minmax(100px, 180px) minmax(90px, 150px) 1fr; gap: 10px; align-items: baseline; padding: 8px 12px; border-top: 1px solid var(--line); font-size: 13px; }
+.roll-time, .roll-formula { color: var(--muted); font-size: 12px; }
+.roll-actor { font-weight: 600; }
+.roll-summary { color: var(--text); }
+@media (max-width: 700px) {
+  .roll-row { grid-template-columns: 64px 1fr; }
+  .roll-formula, .roll-summary { grid-column: 2; }
+}
 .warnings { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .warning { display: flex; gap: 10px; align-items: flex-start; background: rgba(242, 184, 75, 0.06); border: 1px solid rgba(242, 184, 75, 0.24); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; }
 .warning-code { color: var(--amber); font-family: "Cascadia Code", monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 2px; white-space: nowrap; }
@@ -682,6 +695,7 @@ tbody tr:hover { background: rgba(255, 255, 255, 0.015); }
 .marker-time { flex: 0 0 auto; }
 
 /* Callouts */
+.rebuild-progress { width: min(420px, 100%); }
 .callout { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid rgba(125, 211, 252, 0.35); background: rgba(125, 211, 252, 0.06); border-radius: 10px; padding: 11px 13px; margin-bottom: 14px; }
 .callout p { margin: 3px 0 0; }
 

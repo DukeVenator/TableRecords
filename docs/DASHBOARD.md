@@ -36,8 +36,9 @@ The default landing view, designed to fit on one screen while a session is runni
   skipped-silent count), how many people are in voice, when the last speech was heard, and how many
   rolls Foundry has captured.
 - **Session card:** title, date, world, status, and four facts (started, length, consent, notes).
-  The primary action follows the state: **Start recording**, **Stop and save**, **Open session**,
-  or **Build notes** when the notes are missing or out of date. When the Foundry bridge is live, a
+  The primary action follows the state: **Start recording**, **Pause recording**, **Resume
+  recording**, **Stop and save**, **Open session**, or **Build notes** when the notes are missing or
+  out of date. When the Foundry bridge is live, a
   **Prompt players in Foundry when recording starts** tick sends the consent notice through the
   bridge (checked whenever the bridge is live; untick to skip); the dashboard records the prompt and
   starts immediately, dropping anyone who opts out. A pre-flight panel explains any other blocker
@@ -80,7 +81,8 @@ where it is useful.
   sessions, **Add blank row**, and remove. The GM has separate name/ID fields. Title, server, voice
   channel, notes, and consent are below. No `name | id | character` text is required.
 - **Session header:** date, length, and people count, the current status, a contextual primary
-  action (**Start recording**, **Stop and save**, **Build notes**, or **Open folder**), **Copy ID**,
+  action (**Start recording**, **Pause** or **Resume recording**, **Stop and save**, **Build
+  notes**, or **Open folder**), **Copy ID**,
   and **Archive**. An out-of-date file set is badged in the header.
 
 Tabs:
@@ -200,8 +202,8 @@ recordings; this prevents creating a second, unmatched identity.
   **I already tested**; the speech step offers the engine choice and a **Use Whisper instead**
   shortcut when Parrot is not ready.
 - **Transcription:** engine selector (**Parrot (Parakeet)** default, or **Whisper**), spoken
-  language, and a readiness line from the active engine. Parrot exposes model/runtime paths, device,
-  and concurrency. Whisper exposes model, device, precision, beam size, and a **Whisper fine tuning**
+  language, and a readiness line from the active engine. Parrot exposes model/runtime paths, a
+  **Use CPU instead of the graphics card** checkbox, and concurrency. Whisper exposes model, device, precision, beam size, and a **Whisper fine tuning**
   disclosure for no-speech/log-probability/compression thresholds and Silero VAD. A **Vocabulary
   hints** disclosure adds an extra Whisper prompt and hotwords shared with Parrot. **Run checks**
   reruns the doctor.
@@ -299,7 +301,9 @@ All endpoints are under `/api`, return JSON unless noted, and use integer epoch-
 | POST | `/api/sessions/:id/archive` | Archive or restore a session (not while recording) | `{archived?}` | `SessionDetail` |
 | DELETE | `/api/sessions/:id?confirm=<id>` | Permanently delete a session and its folder | exact session ID in `confirm` | 204; 409 if active/live job |
 | PUT | `/api/sessions/:id/people` | Replace speaker/character mapping | `{people:[{discordUserId?,foundryUserId?,character?,role?,consent?,aliases?}]}` | `SessionDetail` |
-| POST | `/api/sessions/:id/start` | Join (if needed) and start recording | — | `StatusSnapshot`; 409 if active |
+| POST | `/api/sessions/:id/start` | Join (if needed) and start recording. Also resumes a saved or captured session and appends to the same folder. | — | `StatusSnapshot`; 409 if active |
+| POST | `/api/sessions/:id/pause` | Pause the active recording and discard the in-progress partial clip | — | `StatusSnapshot`; 409 if not recording |
+| POST | `/api/sessions/:id/resume` | Resume a paused recording | — | `StatusSnapshot`; 409 if not paused |
 | POST | `/api/sessions/:id/stop` | Stop, finalize WAVs/manifest, leave voice | — | `StatusSnapshot`; 409 if not recording |
 | POST | `/api/sessions/:id/markers` | Add a marker or mental note | `{tsMs?, kind, label?, mentalNote?}` | 201 `Marker` |
 | DELETE | `/api/sessions/:id/markers/:markerId` | Delete a marker | — | 204 |

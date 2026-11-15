@@ -85,6 +85,7 @@ export function SetupView(props: SetupProps) {
   const [llamacppBusy, setLlamacppBusy] = useState<string | null>(null);
   const [liveLlama, setLiveLlama] = useState<LlamaCppStatus | null>(null);
   const [llmThinkingEffort, setLlmThinkingEffort] = useState<LlmThinkingEffort>("off");
+  const [llmCustomModel, setLlmCustomModel] = useState(false);
   const [llmModels, setLlmModels] = useState<LlmModelInfo[]>([]);
   const [llmModelsBusy, setLlmModelsBusy] = useState(false);
   const [llmModelsError, setLlmModelsError] = useState<string | null>(null);
@@ -93,6 +94,7 @@ export function SetupView(props: SetupProps) {
   const [inviteCopied, setInviteCopied] = useState(false);
   const lastSettingsRef = useRef<SettingsPayload["settings"] | null>(null);
   const foundryInputRef = useRef<HTMLInputElement | null>(null);
+  const llmModelInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!props.settings) return;
@@ -227,6 +229,7 @@ export function SetupView(props: SetupProps) {
 
   const changeLlmProvider = (next: LlmProvider) => {
     setLlmProvider(next);
+    setLlmCustomModel(false);
     setLlmModels([]);
     setLlmTest(null);
     setLlmModelsError(null);
@@ -237,12 +240,10 @@ export function SetupView(props: SetupProps) {
     }
   };
 
-  const checkLlmModels = async () => {
+  const loadLlmModels = async () => {
     setLlmModelsBusy(true);
     setLlmModelsError(null);
-    setLlmTest(null);
     try {
-      await props.onSaveSettings(llmPayload());
       const result = await api<{ models: LlmModelInfo[] }>("/api/llm/models");
       setLlmModels(result.models);
       if (!llmModel && result.models[0]) setLlmModel(result.models[0].id);
@@ -252,6 +253,24 @@ export function SetupView(props: SetupProps) {
       setLlmModelsBusy(false);
     }
   };
+
+  const checkLlmModels = async () => {
+    setLlmTest(null);
+    try {
+      await props.onSaveSettings(llmPayload());
+      await loadLlmModels();
+    } catch (error) {
+      setLlmModelsError(error instanceof Error ? error.message : "The model list could not be loaded.");
+    }
+  };
+
+  useEffect(() => {
+    if (!llmEnabled || llmProvider === "deepseek") return;
+    void loadLlmModels();
+    // Load once when the AI card becomes active or the provider changes.
+    // The Check models button refreshes after editing the endpoint.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [llmEnabled, llmProvider]);
 
   const testLlmConnection = async () => {
     setLlmModelsBusy(true);
@@ -669,11 +688,26 @@ export function SetupView(props: SetupProps) {
                 <Field label="nemo-speech runtime" hint="Executable name on PATH, or a full path.">
                   <input value={parakeetPath} onChange={(event) => setParakeetPath(event.target.value)} className="mono" />
                 </Field>
-                <Field label="Device" hint="CUDA is much faster; CPU is a fallback.">
-                  <select value={parakeetDevice} onChange={(event) => setParakeetDevice(event.target.value)}>
-                    <option value="cuda">Graphics card</option>
-                    <option value="cpu">Processor</option>
-                  </select>
+                <Field label="Device" hint="CUDA is faster. Use CPU when the graphics card is short on memory.">
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={parakeetDevice === "cpu"}
+                      onChange={async (event) => {
+                        const next = event.target.checked ? "cpu" : "cuda";
+                        setParakeetDevice(next);
+                        try {
+                          await props.onSaveSettings({ parakeetDevice: next });
+                        } catch {
+                          setParakeetDevice(next === "cpu" ? "cuda" : "cpu");
+                        }
+                      }}
+                    />
+                    <span>Use CPU instead of the graphics card</span>
+                  </label>
+                  <p className="muted tiny">
+                    Applies immediately. Parakeet starts on the processor and does not try CUDA first.
+                  </p>
                 </Field>
                 <Field label="Concurrency" hint="Clips decoded in parallel. Lower this if the GPU runs out of memory.">
                   <input
@@ -1021,23 +1055,44 @@ export function SetupView(props: SetupProps) {
                   : "For example qwen3.5:27b-q4_K_M or qwen3.5:9b-q8_0."
             }
           >
-            <input
-              value={llmModel}
-              list="llm-model-options"
-              onChange={(event) => setLlmModel(event.target.value)}
-              placeholder={
-                llmProvider === "deepseek"
-                  ? "deepseek-flash"
-                  : llmProvider === "llamacpp"
-                    ? "qwen3.5-35b-a3b"
-                    : "qwen3.5:27b-q4_K_M"
-              }
-            />
-            <datalist id="llm-model-options">
-              {llmModels.map((item) => (
-                <option key={item.id} value={item.id} />
-              ))}
-            </datalist>
+            <div className="model-picker">
+              {llmModels.length > 0 && !llmCustomModel ? (
+                <select value={llmModel} onChange={(event) => setLlmModel(event.target.value)}>
+                  {!llmModel && <option value="">Choose a model…</option>}
+                  {llmModel && !llmModels.some((item) => item.id === llmModel) && (
+                    <option value={llmModel}>{llmModel} (configured)</option>
+                  )}
+                  {llmModels.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.id}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  ref={llmModelInputRef}
+                  value={llmModel}
+                  onChange={(event) => setLlmModel(event.target.value)}
+                  placeholder={
+                    llmProvider === "deepseek"
+                      ? "deepseek-flash"
+                      : llmProvider === "llamacpp"
+                        ? "qwen3.5-35b-a3b"
+                        : "qwen3.5:27b-q4_K_M"
+                  }
+                />
+              )}
+              <Button
+                variant="small"
+                type="button"
+                onClick={() => {
+                  if (llmModels.length === 0) llmModelInputRef.current?.focus();
+                  else setLlmCustomModel((value) => !value);
+                }}
+              >
+                {llmCustomModel && llmModels.length > 0 ? "Use loaded models" : "Add model"}
+              </Button>
+            </div>
           </Field>
           <Field label="Timeout (seconds)">
             <input type="number" min={5} max={300} value={llmTimeoutSeconds} onChange={(event) => setLlmTimeoutSeconds(Number(event.target.value))} />

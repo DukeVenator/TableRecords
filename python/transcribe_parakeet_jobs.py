@@ -165,6 +165,7 @@ def main() -> int:
         output_dir.mkdir()
         for job in jobs:
             shutil.copy2(job["_audio_path"], input_dir / f"{job['utteranceId']}.wav")
+        device_used = args.device
         command = [
             args.nemo_speech,
             "transcribe",
@@ -247,6 +248,58 @@ def main() -> int:
                 print(f"nemo-speech exited {returncode}", file=sys.stderr, flush=True)
                 if stderr_tail:
                     print("\n".join(stderr_tail[-12:]), file=sys.stderr, flush=True)
+                if args.device != "cpu":
+                    print("Retrying the batch on CPU", file=sys.stderr, flush=True)
+                    emit({"type": "stage", "stage": "retrying-cpu"})
+                    if output_dir.is_dir():
+                        shutil.rmtree(output_dir)
+                    output_dir.mkdir()
+                    cpu_command = list(command)
+                    cpu_command[cpu_command.index("--device") + 1] = "cpu"
+                    try:
+                        cpu_process = subprocess.Popen(
+                            cpu_command,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            encoding="utf-8",
+                            errors="replace",
+                            bufsize=1,
+                        )
+                        assert cpu_process.stderr is not None
+                        cpu_done = 0
+                        for line in cpu_process.stderr:
+                            line = line.rstrip()
+                            if not line:
+                                continue
+                            match = progress_re.search(line)
+                            if match:
+                                cpu_done = max(cpu_done, int(match.group(1)))
+                                file_match = re.search(r"(u_[0-9A-Fa-f]+)\.wav", line)
+                                emit(
+                                    {
+                                        "type": "progress",
+                                        "done": cpu_done,
+                                        "total": len(jobs),
+                                        "utteranceId": file_match.group(1) if file_match else None,
+                                    }
+                                )
+                            elif re.search(r"error|failed|warn", line, re.IGNORECASE):
+                                print(line, file=sys.stderr, flush=True)
+                        try:
+                            returncode = cpu_process.wait(timeout=1800)
+                        except subprocess.TimeoutExpired:
+                            cpu_process.kill()
+                            cpu_process.wait()
+                            returncode = -1
+                        device_used = "cpu"
+                        if returncode == 0:
+                            print("CPU transcription completed", file=sys.stderr, flush=True)
+                        else:
+                            print(f"CPU transcription exited {returncode}", file=sys.stderr, flush=True)
+                    except subprocess.TimeoutExpired:
+                        returncode = -1
+                        print("CPU transcription timed out", file=sys.stderr, flush=True)
         except Exception as exc:
             print(f"Parakeet batch failed: {type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
         finally:
@@ -297,7 +350,7 @@ def main() -> int:
                     error_handle.flush()
                     emit({"type": "error", "utteranceId": job.get("utteranceId"), "code": "transcribe_failed", "message": message})
                 else:
-                    out_handle.write(json.dumps(record_for(job, data, args.model, args.device, version), ensure_ascii=False) + "\n")
+                    out_handle.write(json.dumps(record_for(job, data, args.model, device_used, version), ensure_ascii=False) + "\n")
                     out_handle.flush()
                     written += 1
     emit({"type": "progress", "done": len(jobs), "total": len(jobs)})

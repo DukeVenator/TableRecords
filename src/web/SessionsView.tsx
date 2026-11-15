@@ -40,6 +40,7 @@ import {
   formatDateTime,
   formatLength,
   formatRelative,
+  formatTime,
   sessionStatusLabel,
   statusTone,
   summaryPresetLabel,
@@ -61,11 +62,15 @@ export interface SessionsProps {
   busy: string | null;
   markerLabel: string;
   botReady: boolean;
+  captureState: string;
+  captureSessionId: string | null;
   onSelect: (id: string) => void;
   onGuild: (value: string) => void;
   onChannel: (value: string) => void;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean> | boolean;
   onStart: (sessionId: string) => void;
+  onPause: (sessionId: string) => void;
+  onResume: (sessionId: string) => void;
   onStop: (sessionId: string) => void;
   onMarker: (sessionId: string, kind: string, mentalNote?: boolean) => void;
   onDeleteMarker: (sessionId: string, markerId: string) => void;
@@ -272,11 +277,21 @@ export function SessionsView(props: SessionsProps) {
   }, [props.worlds]);
 
   const session = detail?.session ?? null;
+  const sessionPaused = Boolean(session && session.sessionId === props.captureSessionId && props.captureState === "paused");
+  const rebuildJob = session
+    ? props.jobs.find(
+        (job) =>
+          job.sessionId === session.sessionId &&
+          job.type === "run_all" &&
+          (job.status === "queued" || job.status === "running")
+      ) ?? null
+    : null;
   const foundryPromptFresh =
     detail?.consentPrompt != null && Date.now() - detail.consentPrompt.promptedAtMs < 24 * 60 * 60_000;
+  const resumable = Boolean(session) && ["ready", "captured"].includes(session!.status);
   const canStart =
     Boolean(session) &&
-    ["draft", "error"].includes(session!.status) &&
+    ["draft", "error", "ready", "captured"].includes(session!.status) &&
     (session!.consent.confirmed || foundryPromptFresh) &&
     props.botReady &&
     !busy;
@@ -857,11 +872,28 @@ export function SessionsView(props: SessionsProps) {
               subtitle={`${session.campaign?.trim() || session.world.title} · ${formatDate(session.createdAtMs, session.timeZone)} · ${detail.people.length} ${detail.people.length === 1 ? "person" : "people"}`}
               actions={
                 <div className="button-row">
-                  <Pill tone={statusTone(session.status)}>{sessionStatusLabel(session.status)}</Pill>
+                  <Pill tone={sessionPaused ? "warn" : statusTone(session.status)}>
+                    {sessionPaused ? "paused" : sessionStatusLabel(session.status)}
+                  </Pill>
                   {storage && <Pill tone="idle">{formatBytes(storage.totalBytes)}</Pill>}
                   {detail.outputsStale && <Pill tone="warn">files out of date</Pill>}
                   {["recording", "joining"].includes(session.status) ? (
-                    <Button variant="danger" disabled={Boolean(busy)} onClick={() => props.onStop(session.sessionId)}>Stop and save</Button>
+                    <>
+                      {session.status === "recording" && (
+                        <Button
+                          variant="ghost"
+                          disabled={Boolean(busy)}
+                          onClick={() => (sessionPaused ? props.onResume(session.sessionId) : props.onPause(session.sessionId))}
+                        >
+                          {busy === "pause" ? "Pausing…" : busy === "resume" ? "Resuming…" : sessionPaused ? "Resume recording" : "Pause recording"}
+                        </Button>
+                      )}
+                      <Button variant="danger" disabled={Boolean(busy)} onClick={() => props.onStop(session.sessionId)}>Stop and save</Button>
+                    </>
+                  ) : resumable ? (
+                    <Button variant="primary" disabled={!canStart} onClick={() => props.onStart(session.sessionId)}>
+                      Resume recording
+                    </Button>
                   ) : ["draft", "error"].includes(session.status) ? (
                     <Button variant="primary" disabled={!canStart} onClick={() => props.onStart(session.sessionId)}>Start recording</Button>
                   ) : session.status === "processing" ? (
@@ -1499,8 +1531,32 @@ export function SessionsView(props: SessionsProps) {
                         </div>
                       )}
                     </>
-                  ) : (
-                    <Empty title="No Foundry export imported">The macro export keeps FFG narrative-dice symbols intact.</Empty>
+                  ) : detail.rolls.length === 0 ? (
+                    <Empty
+                      title={
+                        detail.foundryLive?.messageCount
+                          ? "Live rolls have not been merged yet"
+                          : "No Foundry export imported"
+                      }
+                    >
+                      {detail.foundryLive?.messageCount
+                        ? "The bridge saved events for this session, but the timeline has not been rebuilt since they arrived. Merge them to add the rolls."
+                        : "The macro export keeps FFG narrative-dice symbols intact."}
+                    </Empty>
+                  ) : null}
+
+                  {detail.rolls.length > 0 && (
+                    <div className="roll-list">
+                      <h3>Rolls in this session</h3>
+                      {detail.rolls.map((roll, index) => (
+                        <div className="roll-row" key={`${roll.tsMs}-${index}`}>
+                          <span className="roll-time">{formatTime(roll.tsMs, session.timeZone)}</span>
+                          <span className="roll-actor">{roll.character ?? roll.actorName ?? "Foundry"}</span>
+                          <span className="roll-formula mono">{roll.formula || "—"}</span>
+                          <span className="roll-summary">{roll.summary || roll.flavor || "—"}</span>
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   {detail.foundryLive && (
@@ -1513,6 +1569,20 @@ export function SessionsView(props: SessionsProps) {
                         <Stat label="Combat" value={detail.foundryLive.combat?.name ?? "—"} />
                         <Stat label="Module" value={detail.foundryLive.moduleVersion ?? "—"} sub="running client" />
                       </div>
+                      {detail.foundryLive.messageCount > 0 && (
+                        <div className="button-row">
+                          <Button
+                            variant="primary"
+                            disabled={!canProcess || Boolean(busy)}
+                            onClick={() => props.onEnqueue(session.sessionId, "merge")}
+                          >
+                            Merge live rolls
+                          </Button>
+                          <span className="muted tiny">
+                            Adds saved bridge events without transcribing the recording again.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1525,9 +1595,26 @@ export function SessionsView(props: SessionsProps) {
                       <div>
                         <strong>These files are out of date.</strong>
                         <p className="small">{detail.outputsStaleReason ?? "The session changed after they were written."}</p>
+                        {rebuildJob && (
+                          <>
+                            <div className="progress rebuild-progress">
+                              <span style={{ width: `${Math.max(0, Math.min(100, rebuildJob.progress.percent || 0))}%` }} />
+                            </div>
+                            <p className="muted tiny">
+                              {rebuildJob.status === "queued"
+                                ? "Waiting for a worker"
+                                : rebuildJob.progress.detail ?? "Building the notes"}
+                              {rebuildJob.status === "running" ? ` · ${Math.round(rebuildJob.progress.percent || 0)}%` : ""}
+                            </p>
+                          </>
+                        )}
                       </div>
-                      <Button variant="primary" disabled={!canProcess || Boolean(busy)} onClick={() => props.onEnqueue(session.sessionId, "run_all")}>
-                        Rebuild
+                      <Button
+                        variant="primary"
+                        disabled={!canProcess || Boolean(busy) || Boolean(rebuildJob)}
+                        onClick={() => props.onEnqueue(session.sessionId, "run_all")}
+                      >
+                        {rebuildJob ? (rebuildJob.status === "queued" ? "Queued…" : "Rebuilding…") : "Rebuild"}
                       </Button>
                     </div>
                   )}

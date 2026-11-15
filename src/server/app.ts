@@ -2616,7 +2616,10 @@ export class TableRecordsApp {
 
       let session = await this.sessions.get(sessionId);
       if (this.recorder.isActive()) apiError("invalid_state", "Capture is already active", 409);
-      if (!["draft", "error"].includes(session.status)) apiError("invalid_state", `This session is not ready to start yet.`, 409);
+      const resumable = ["ready", "captured"].includes(session.status);
+      if (!["draft", "error"].includes(session.status) && !resumable) {
+        apiError("invalid_state", "This session is not ready to start yet.", 409);
+      }
       const foundryPrompt = this.store.getConsentPrompt(session.world.id);
       const promptFresh = foundryPrompt != null && Date.now() - foundryPrompt.promptedAtMs < 24 * 60 * 60_000;
       if (promptPlayers) {
@@ -2689,7 +2692,7 @@ export class TableRecordsApp {
         if (!this.discord.connectionReady() || this.discord.channelId() !== session.voiceChannel.id) {
           await this.discord.join(guildId, session.voiceChannel.id);
         }
-        const startedAtMs = Date.now();
+        const startedAtMs = session.startedAtMs ?? Date.now();
         await this.recorder.start({
           sessionId: joining.sessionId,
           sessionDir: this.sessions.sessionDir(joining.sessionId),

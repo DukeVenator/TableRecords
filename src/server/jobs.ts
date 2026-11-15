@@ -1,4 +1,4 @@
-import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig } from "./config.js";
@@ -824,6 +824,25 @@ export class JobRunner {
     this.broadcast("job.log", { jobId: job.jobId, seq, tsMs, level, line });
   }
 
+  private killChildTree(child: ChildProcessWithoutNullStreams): void {
+    if (process.platform === "win32" && child.pid) {
+      try {
+        spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+          windowsHide: true,
+          stdio: "ignore"
+        }).unref();
+        return;
+      } catch {
+        // Fall back to the direct process kill below.
+      }
+    }
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // Already gone.
+    }
+  }
+
   async cancel(jobId: string): Promise<Job> {
     const job = this.store.getJob(jobId);
     if (!job) throw new JobError("not_found", `That job is no longer there.`, 404);
@@ -839,19 +858,9 @@ export class JobRunner {
       this.cancelled.add(jobId);
       const child = this.children.get(jobId);
       if (child) {
-        try {
-          child.kill();
-        } catch {
-          // ignore
-        }
+        this.killChildTree(child);
         setTimeout(() => {
-          if (this.children.has(jobId)) {
-            try {
-              child?.kill("SIGKILL");
-            } catch {
-              // ignore
-            }
-          }
+          if (this.children.has(jobId)) this.killChildTree(child);
         }, 3000).unref?.();
       }
       job.status = "cancelled";
@@ -889,11 +898,7 @@ export class JobRunner {
   async shutdown(): Promise<void> {
     this.closing = true;
     for (const child of this.children.values()) {
-      try {
-        child.kill();
-      } catch {
-        // ignore
-      }
+      this.killChildTree(child);
     }
     this.children.clear();
     if (this.loopActive) {

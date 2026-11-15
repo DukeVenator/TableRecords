@@ -355,8 +355,18 @@ export interface SessionDetail {
     transcriptRecords: number;
     foundryEvents: number;
     timelineEvents: number;
+    rolls: number;
     outputs: number;
   };
+  rolls: Array<{
+    tsMs: number;
+    actorName: string | null;
+    character: string | null;
+    formula: string;
+    summary: string;
+    total: number | null;
+    flavor: string | null;
+  }>;
   foundrySummary: FoundryImportSummary | null;
   foundryLive: FoundryLiveState | null;
   audio: {

@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 import type { LlmProvider, LlmThinkingEffort } from "../core/types.js";
 
 export const PROJECT_ROOT = path.resolve(fileURLToPath(new URL("../..", import.meta.url)));
-export const APP_VERSION = "0.1.0";
+const packageMeta = JSON.parse(fs.readFileSync(path.join(PROJECT_ROOT, "package.json"), "utf8")) as { version?: unknown };
+export const APP_VERSION = typeof packageMeta.version === "string" ? packageMeta.version : "0.0.0";
 export const APP_SCHEMA = "tablerecords.status/v1";
 export const DEFAULT_PORT = 17_300;
 function hostTimeZone(): string {

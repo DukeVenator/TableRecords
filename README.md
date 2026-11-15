@@ -116,6 +116,7 @@ The macro export is a lighter option and is documented later.
 
 - Record, Sessions, People, and Setup screens.
 - Seven outputs: `transcript.md`, `chronology.md`, `rolls.csv`, `roll-sync.md`, `mental-notes.md`, `stats.md`, and `notes-ready.md`.
+- Resume a saved session to append another recording segment to the same folder.
 - Session stats: length, speech coverage, talk time, turns, rolls, per-player share, longest turn, words per minute.
 - Review audio: a timestamp-aligned master mix plus per-speaker tracks. Clips can be compacted to 16 kHz mono or deleted after the mix is saved.
 - Archive and guarded delete.
@@ -195,9 +196,9 @@ npm run build:web
 npm run test:e2e        # dashboard must be running on 127.0.0.1:17300
 ```
 
-The current suite has **143 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
+The current suite has **144 tests across 44 files**. Playwright adds 11 browser checks in Edge plus one opt-in live Ollama check. The tests cover WAV writing, voice activity, transcript stitching, Foundry imports and adapters, the macro and module sandboxes, Break Time, consent and opt-outs, merge/render, review audio, output freshness, Parrot and Whisper settings, CSV hardening, job recovery, path safety, session lifecycle, and the summary pipeline.
 
-GitHub Actions does not run model calls. CI runs `npm run test:ci` (121 tests), lint, typecheck, the web build, and the docs check. A `vX.Y.Z` tag starts a release only if CI passes, and the tag must match `package.json`. Bridge tags use `module-vX.Y.Z` and must match `foundry-module/module.json`.
+GitHub Actions does not run model calls. CI runs `npm run test:ci` (124 tests), lint, typecheck, the web build, and the docs check. A `vX.Y.Z` tag starts a release only if CI passes, and the tag must match `package.json`. Bridge tags use `module-vX.Y.Z` and must match `foundry-module/module.json`.
 
 See [docs/RELEASING.md](docs/RELEASING.md).
 
