@@ -162,7 +162,7 @@ export function RecordView(props: RecordProps) {
 
   const recentOptions = [...new Set([60, 180, 300, 600, 900, props.recentSeconds])].sort((a, b) => a - b);
   const recentLabel = (seconds: number) =>
-    seconds % 60 === 0 ? `Last ${seconds / 60} minute${seconds === 60 ? "" : "s"}` : `Last ${seconds} seconds`;
+    seconds % 60 === 0 ? `${seconds / 60} minute${seconds === 60 ? "" : "s"}` : `${seconds} seconds`;
   const contextJob = jobs.find((job) => job.type === "context" && job.sessionId === sessionId) ?? null;
   const contextBusy = Boolean(contextJob && ["queued", "running"].includes(contextJob.status));
   const activeJob = status.jobs.active;
@@ -370,7 +370,7 @@ export function RecordView(props: RecordProps) {
                   <span className="muted small">Need a brief while recording?</span>
                   <select value={props.recentSeconds} onChange={(event) => props.onRecentSeconds(Number(event.target.value))}>
                     {recentOptions.map((seconds) => (
-                      <option key={seconds} value={seconds}>last {recentLabel(seconds)}</option>
+                      <option key={seconds} value={seconds}>Last {recentLabel(seconds)}</option>
                     ))}
                   </select>
                   <Button
@@ -572,7 +572,7 @@ export function RecordView(props: RecordProps) {
                     <span>Brief window</span>
                     <select aria-label="Brief window" value={props.recentSeconds} onChange={(event) => props.onRecentSeconds(Number(event.target.value))}>
                       {recentOptions.map((seconds) => (
-                        <option key={seconds} value={seconds}>last {recentLabel(seconds)}</option>
+                        <option key={seconds} value={seconds}>Last {recentLabel(seconds)}</option>
                       ))}
                     </select>
                   </label>
@@ -598,7 +598,7 @@ export function RecordView(props: RecordProps) {
                   <h3>AI summary</h3>
                   <p className="muted small">
                     {props.llmScope === "recent"
-                      ? `Uses the ${recentLabel(props.recentSeconds)} window above.`
+                      ? `Uses the last ${recentLabel(props.recentSeconds)} window above.`
                       : "Uses the selected scope. No window applies."}
                   </p>
                 </div>
